@@ -1,0 +1,58 @@
+# GitHub Actions Workflow: Check Repository Ruleset
+# 
+# This workflow ensures that the repository's branch protection rules
+# match the expected ruleset defined in the template repository.
+#
+# It runs on pushes to the main branch and pull requests.
+#
+# Steps:
+# 1. Fetch the expected Branch Protection Rulesets from the template repository.
+# 2. Fetch the current repository's Branch Protection Rulesets.
+# 3. Compare the expected and actual rulesets.
+
+# Copyright (c) 2025 The University of Manchester
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: Check Repository Ruleset
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  check-ruleset:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Fetch Standard RSE Ruleset
+        id: expected
+        uses: UoMResearchIT/actions/get-repo-ruleset@v0.3
+        with:
+          repository: UoMResearchIT/RSE-Repository-Template
+          token: ${{ secrets.ACTIONS_REPO_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Fetch This Repository's Ruleset
+        id: current
+        uses: UoMResearchIT/actions/get-repo-ruleset@v0.3
+
+      - name: Compare Rulesets
+        uses: UoMResearchIT/actions/check-ruleset-containment@v0.3
+        with:
+          current: ${{ steps.current.outputs.filename }}
+          expected: ${{ steps.expected.outputs.filename }}
