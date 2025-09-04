@@ -1,4 +1,9 @@
 #!/bin/bash --login
+
+# SPDX-FileCopyrightText: 2025 University of Manchester
+#
+# SPDX-License-Identifier: apache-2.0
+
 #$ -N WPS-%%JOBID%%            
 #$ -cwd
 #$ -pe smp.pe 8
