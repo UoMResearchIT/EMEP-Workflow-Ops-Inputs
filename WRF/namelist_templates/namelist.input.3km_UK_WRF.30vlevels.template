@@ -73,6 +73,7 @@
  num_soil_layers                     = 4,
  sf_urban_physics                    = 0, 
  sst_update                          = 1,
+ do_radar_ref                        = 1,
  /
 
 
