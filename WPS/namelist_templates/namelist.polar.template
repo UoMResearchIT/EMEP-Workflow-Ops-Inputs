@@ -1,0 +1,10 @@
+&control
+ indir = %%INDIR%%
+ outdir = './'
+ filenumber = %%FILECOUNT%%
+ debug = .false.
+/
+
+&filelist
+ filenames = %%FILELIST%%
+/
