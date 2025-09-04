@@ -94,7 +94,7 @@
   NEST_MODE_SAVE = 'NHOUR',        ! every NHOURSAVE
 ! NEST_MODE_SAVE = 'END',          ! at end of run
 ! NEST_NHOURREAD = 1,              ! hours between reads. Fraction of 24
-! NEST_NHOURSAVE = 3,              ! hours between saves. Fraction of 24
+  NEST_NHOURSAVE = 1,              ! hours between saves. Fraction of 24
 ! NEST_OUTDATE_NDUMP = 2,          ! dump (save) 2 dates (max 4)
 ! NEST_outdate(1)= 2015,1,1,1,0    ! first date to save
 ! NEST_outdate(2)= 2015,1,1,7,0    ! second date to save
