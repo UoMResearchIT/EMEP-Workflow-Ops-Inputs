@@ -6,6 +6,7 @@ import xarray as xr
 from wrf import getvar, to_np, latlon_coords
 import netCDF4 as nc
 import argparse
+from datetime import date, timedelta
 
 
 def get_latlon_shape(ds):
@@ -31,7 +32,7 @@ def load_4d_emep_data(ds, t, varName, outArray):
 #def load_4d_emep_PM25_data(ds, t, outArray):
     
     
-def main(wrfDir, emepDir, outputDir, wrfFile, emepFile, outFile):
+def data_extract(wrfDir, emepDir, outputDir, wrfFile, emepFile, outFile):
    
    wrfDS = nc.Dataset(wrfDir+wrfFile)
    emepDS = nc.Dataset(emepDir+emepFile)
@@ -71,28 +72,37 @@ def main(wrfDir, emepDir, outputDir, wrfFile, emepFile, outFile):
 def parse_cli_arguments():
     parser = argparse.ArgumentParser(description="WRF/EMEP Data Extraction and Collation")
     
-    parser.add_argument("-y", "--year", required=True, help="Data Year")
-    parser.add_argument("-m", "--month", required=True, help="Data Month")
-    parser.add_argument("-d", "--day", required=True, help="Data Day")
-    
-    parser.add_argument("-w", "--wrfdir", required=True, help="WRF data directory")
-    parser.add_argument("-e", "--emepdir", required=True, help="EMEP data directory")
-    parser.add_argument("-o", "--outdir", required=True, help="Output data directory")
+    parser.add_argument("--startyear", required=True, help="Data Start Year")
+    parser.add_argument("--startmonth", required=True, help="Data Start Month")
+    parser.add_argument("--startday", required=True, help="Data Start Day")
 
-    parser.add_argument("-n", "--wrfdomain", required=False, default="d01", help="WRF domain")
+    parser.add_argument("--endyear", required=True, help="Data End Year")
+    parser.add_argument("--endmonth", required=True, help="Data End Month")
+    parser.add_argument("--endday", required=True, help="Data End Day")
+    
+    parser.add_argument("--wrfdir", required=True, help="WRF data directory")
+    parser.add_argument("--emepdir", required=True, help="EMEP data directory")
+    parser.add_argument("--outdir", required=True, help="Output data directory")
+
+    parser.add_argument("--wrfdomain", required=False, default="d01", help="WRF domain")
 
     return vars(parser.parse_args())
     
-    
 
-if __name__ == "__main__":
+def main():
     print('get arguments')
     
     args = parse_cli_arguments()
 
-    year = args["year"]
-    month = args["month"]
-    day = args["day"]
+    startYear = int(args["startyear"])
+    startMonth = int(args["startmonth"])
+    startDay = int(args["startday"])
+    currentDate = date(startYear, startMonth, startDay)
+
+    endYear = int(args["endyear"])
+    endMonth = int(args["endmonth"])
+    endDay = int(args["endday"])
+    endDate = date(endYear, endMonth, endDay)
     
     wrfDir = args["wrfdir"]
     emepDir = args["emepdir"]
@@ -104,12 +114,23 @@ if __name__ == "__main__":
     print('start data extraction')
     
     
-    wrfFile = f"wrfout_{wrfdom}_{year}-{month}-{day}_00:00:00"
-    emepFile = f"EMEP_OUT_{year}{month}{day}.nc"
+    while (currentDate <= endDate):
     
-    outFile = f"WRF_EMEP_{year}{month}{day}.nc"
-    
-    main(wrfDir, emepDir, outputDir, wrfFile, emepFile, outFile)
+        currentYear = currentDate.year
+        currentMonth = currentDate.month
+        currentDay = currentDate.day
+        
+        wrfFile = f"wrfout_{wrfdom}_{currentYear:02d}-{currentMonth:02d}-{currentDay:02d}_00:00:00"
+        emepFile = f"EMEP_OUT_{currentYear:02d}{currentMonth:02d}{currentDay:02d}.nc"
+        
+        outFile = f"WRF_EMEP_{currentYear:02d}{currentMonth:02d}{currentDay:02d}.nc"
+        
+        data_extract(wrfDir, emepDir, outputDir, wrfFile, emepFile, outFile)
+        
+        currentDate = currentDate + timedelta(days=1)
     
     print('finished data extraction')
-    
+
+
+if __name__ == "__main__":
+    main()
