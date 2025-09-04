@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+# SPDX-FileCopyrightText: 2025 University of Manchester
+#
+# SPDX-License-Identifier: apache-2.0
+
 import time
 from datetime import date
 from datetime import timedelta

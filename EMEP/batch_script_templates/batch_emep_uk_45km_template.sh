@@ -1,4 +1,9 @@
 #!/bin/bash --login
+
+# SPDX-FileCopyrightText: 2025 University of Manchester
+#
+# SPDX-License-Identifier: apache-2.0
+
 #SBATCH -t 1-0
 #SBATCH -p multicore
 #SBATCH -n 36

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2025 University of Manchester
+#
+# SPDX-License-Identifier: apache-2.0
+
 import xarray as xr
 from wrf import getvar, to_np, latlon_coords
 import netCDF4 as nc
