@@ -1,0 +1,9 @@
+name: wrf-python
+channels:
+  - conda-forge
+dependencies:
+  - netcdf4=1.7.2
+  - xarray=2025.8.0
+  - wrf-python=1.4.0
+  - metpy=1.7.1
+prefix: /mnt/iusers01/support/mbessdl2/bin/miniconda3/envs/wrf-python
