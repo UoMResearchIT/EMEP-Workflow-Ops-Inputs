@@ -41,7 +41,7 @@ def data_extract(wrfDir, emepDir, outputDir, wrfFile, emepFile, outFile):
    
    lat, lon, south_north, west_east, bottom_top = get_latlon_shape(wrfDS)
 
-   with nc.Dataset(outputDir+outFile, "w", format="NETCDF4") as out:
+   with nc.Dataset(path.join(outputDir, outFile), "w", format="NETCDF4") as out:
         out.createDimension("Time", None)
         out.createDimension("south_north", south_north)
         out.createDimension("west_east", west_east)
