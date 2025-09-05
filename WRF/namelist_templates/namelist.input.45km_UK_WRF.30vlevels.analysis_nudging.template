@@ -17,8 +17,8 @@
  end_second                          = 00, 00, 00,
  interval_seconds                    = 21600,
  input_from_file                     = .true., .true.,
- history_interval                    = 180, 60 
- frames_per_outfile                  = 8, 24,
+ history_interval                    = 60, 60 
+ frames_per_outfile                  = 24, 24,
  restart                             = .false.,
  restart_interval                    = 500000,
  io_form_history                     = 2
@@ -74,6 +74,7 @@
  num_soil_layers                     = 4,
  sf_urban_physics                    = 0, 0, 0
  sst_update                          = 1,
+ do_radar_ref                        = 1,
  /
 
  &fdda

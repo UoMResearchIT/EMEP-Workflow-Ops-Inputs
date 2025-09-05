@@ -1,0 +1,4 @@
+WPS/geo_grid_data/*/*.nc
+
+EMEP/executables/*
+EMEP/EMEP_input*

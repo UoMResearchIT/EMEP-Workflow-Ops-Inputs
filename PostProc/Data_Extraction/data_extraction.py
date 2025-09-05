@@ -7,7 +7,7 @@ from wrf import getvar, to_np, latlon_coords
 import netCDF4 as nc
 import argparse
 from datetime import date, timedelta
-
+from os import path
 
 def get_latlon_shape(ds):
    pressureSample = getvar(ds, "pressure", timeidx=0)
@@ -34,14 +34,14 @@ def load_4d_emep_data(ds, t, varName, outArray):
     
 def data_extract(wrfDir, emepDir, outputDir, wrfFile, emepFile, outFile):
    
-   wrfDS = nc.Dataset(wrfDir+wrfFile)
-   emepDS = nc.Dataset(emepDir+emepFile)
+   wrfDS = nc.Dataset(path.join(wrfDir, wrfFile))
+   emepDS = nc.Dataset(path.join(emepDir, emepFile))
       
    ntimes = wrfDS.dimensions["Time"]
    
    lat, lon, south_north, west_east, bottom_top = get_latlon_shape(wrfDS)
 
-   with nc.Dataset(outputDir+outFile, "w", format="NETCDF4") as out:
+   with nc.Dataset(path.join(outputDir, outFile), "w", format="NETCDF4") as out:
         out.createDimension("Time", None)
         out.createDimension("south_north", south_north)
         out.createDimension("west_east", west_east)
