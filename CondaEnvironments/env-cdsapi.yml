@@ -1,0 +1,6 @@
+name: cds-api-0.7.6
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - cdsapi=0.7.6
