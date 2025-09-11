@@ -55,16 +55,25 @@ def data_extract(wrfDir, emepDir, outputDir, wrfFile, emepFile, outFile):
         t2_var  = out.createVariable("T2",  "f4", ("Time", "south_north", "west_east"))
         ua_var  = out.createVariable("U",   "f4", ("Time", "bottom_top", "south_north", "west_east"))
         va_var  = out.createVariable("V",   "f4", ("Time", "bottom_top", "south_north", "west_east"))
+        t_var  = out.createVariable("T",   "f4", ("Time", "bottom_top", "south_north", "west_east"))
 
-        o3_var  = out.createVariable("O3", "f4", ("Time", "bottom_top", "south_north", "west_east")) 
+        o3_var  = out.createVariable("O3", "f4", ("Time", "bottom_top", "south_north", "west_east"))
 
-        for t in range(ntimes.size):
+        tcwv_var = out.createVariable("TCWV", "f4", ("Time", "south_north", "west_east"))
+        maxref_var = out.createVariable("MAXREF", "f4", ("Time", "south_north", "west_east"))
+        geopot_var = out.createVariable("Geopotential", "f4", ("Time", "bottom_top", "south_north", "west_east")) 
+
+        for t in range(ntimes.size): # 1 iter
             load_3d_wrf_data(wrfDS, t, "U10", u10_var)
             load_3d_wrf_data(wrfDS, t, "V10", v10_var)
             load_3d_wrf_data(wrfDS, t, "T2", t2_var)
+            load_3d_wrf_data(wrfDS, t, "pw", tcwv_var)
+            load_3d_wrf_data(wrfDS, t, "mdbz", maxref_var)
 
             load_4d_wrf_data(wrfDS, t, "ua", ua_var)
             load_4d_wrf_data(wrfDS, t, "va", va_var)
+            load_4d_wrf_data(wrfDS, t, "T", t_var)
+            load_4d_wrf_data(wrfDS, t, "geopt", geopot_var)
             
             load_4d_emep_data(emepDS, t, "O3", o3_var)
 
@@ -120,7 +129,7 @@ def main():
         currentMonth = currentDate.month
         currentDay = currentDate.day
         
-        wrfFile = f"wrfout_{wrfdom}_{currentYear:02d}-{currentMonth:02d}-{currentDay:02d}_00:00:00"
+        wrfFile = f"wrfout_{wrfdom}_{currentYear:02d}-{currentMonth:02d}-{currentDay:02d}_00&#x3a;00&#x3a;00" # colons not allowed by windows filesystem 
         emepFile = f"EMEP_OUT_{currentYear:02d}{currentMonth:02d}{currentDay:02d}.nc"
         
         outFile = f"WRF_EMEP_{currentYear:02d}{currentMonth:02d}{currentDay:02d}.nc"
