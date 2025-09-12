@@ -29,6 +29,11 @@ def load_4d_emep_data(ds, t, varName, outArray):
     varData = ds[varName][t, :, :, :]
     outArray[t, :, :, :] = to_np(varData)
 
+def load_4d_emep_nox(ds, t, outArray):
+    no = ds["NO"][t, :, :, :]
+    no2 = ds["NO2"][t, :, :, :]
+    outArray[t, :, :, :] = to_np(no) + to_np(no2)
+
 #def load_4d_emep_PM25_data(ds, t, outArray):
     
     
@@ -58,6 +63,7 @@ def data_extract(wrfDir, emepDir, outputDir, wrfFile, emepFile, outFile):
         t_var  = out.createVariable("T",   "f4", ("Time", "bottom_top", "south_north", "west_east"))
 
         o3_var  = out.createVariable("O3", "f4", ("Time", "bottom_top", "south_north", "west_east"))
+        nox_var = out.createVariable("NOX", "f4", ("Time", "bottom_top", "south_north", "west_east"))
 
         tcwv_var = out.createVariable("TCWV", "f4", ("Time", "south_north", "west_east"))
         maxref_var = out.createVariable("MAXREF", "f4", ("Time", "south_north", "west_east"))
@@ -76,6 +82,7 @@ def data_extract(wrfDir, emepDir, outputDir, wrfFile, emepFile, outFile):
             load_4d_wrf_data(wrfDS, t, "geopt", geopot_var)
             
             load_4d_emep_data(emepDS, t, "O3", o3_var)
+            load_4d_emep_nox(emepDS, t, nox_var)
 
 
 def parse_cli_arguments():
