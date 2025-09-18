@@ -33,11 +33,11 @@ def load_4d_emep_data(ds, t, varName, outArray):
 def load_4d_emep_nox(ds, t, outArray):
     no = ds["NO"][t, :, :, :]
     no2 = ds["NO2"][t, :, :, :]
-    outArray[t, :, :, :] = to_np(no) + to_np(no2)
+    outArray[t, :, :, :] = to_np(no) + to_np(no2) # NOX = NO + NO2
 
 def load_4d_emep_pm25(ds, t, outArray):
-    kg_air_per_mol = 0.0289647  # mean molecular weight of air in kg/mol
-    air_density = 1.1845 # at 1 atm and 298K
+    kg_air_per_mol = 0.0289647  # mean molecular weight of dry air in kg/mol
+    air_density = 1.1845 # at 1 atm and 298K (kg/m3)
 
     pmfine_vars = [
         "SO4", "NO3_f", "NH4_f", "EC_f_wood_new", "EC_f_wood_age",
@@ -53,6 +53,9 @@ def load_4d_emep_pm25(ds, t, outArray):
         "Dust_road_f": 200, "Dust_wb_f": 200, "Dust_sah_f": 200, "NO3_c": 62
     }
     
+    # Y = X * (MWspec / MWair)
+    # Y: mass fraction (kg/kg), X: mix ratio (mol/mol), MW: molecular weight (kg/mol)
+
     pm25 = np.zeros_like(ds["SO4"][t, :, :, :])
     for var in pmfine_vars:
         mw = pmfine_mw[var] / 1000.0
@@ -64,7 +67,7 @@ def load_4d_emep_pm25(ds, t, outArray):
     outArray[t, :, :, :] = to_np(pm25_ugm3)
 
 def convert_pm_mixing_to_ugm3(pm_mixing, air_density):
-    # kg/kg * kg/m3 * 1e9
+    # kg/kg * kg/m3 * 1e9 -> ug/m3
     return pm_mixing * air_density * 1e9
     
     
