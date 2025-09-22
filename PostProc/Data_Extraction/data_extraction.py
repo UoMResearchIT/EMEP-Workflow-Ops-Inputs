@@ -49,9 +49,11 @@ def get_latlon_shape(ds: nc.Dataset) -> tuple:
     """
     pressureSample = getvar(ds, "pressure", timeidx=0)
     lat, lon = latlon_coords(pressureSample)
+    
     south_north = pressureSample.sizes['south_north']
     west_east = pressureSample.sizes['west_east']
     bottom_top = pressureSample.sizes['bottom_top']
+
     return(lat, lon, south_north, west_east, bottom_top)
 
 def load_3d_wrf_data(ds: nc.Dataset, t: int, varName: str, outArray: np.ndarray) -> None:
@@ -113,7 +115,6 @@ def data_extract(wrfDir: str, emepDir: str, outputDir: str, wrfFile: str, emepFi
    emepDS = nc.Dataset(path.join(emepDir, emepFile))
       
    ntimes = wrfDS.dimensions["Time"]
-   
    lat, lon, south_north, west_east, bottom_top = get_latlon_shape(wrfDS)
 
    with nc.Dataset(path.join(outputDir, outFile), "w", format="NETCDF4") as out:
@@ -152,7 +153,6 @@ def data_extract(wrfDir: str, emepDir: str, outputDir: str, wrfFile: str, emepFi
             
             load_4d_emep_data(emepDS, t, "O3", o3_var)
 
-
 def parse_cli_arguments() -> dict:
     """
     Parse command-line arguments for WRF/EMEP data extraction.
@@ -181,9 +181,9 @@ def main() -> None:
     Returns:
         None
     """
-    get_constants()
     print('Getting Arguments...')
     
+    get_constants()
     args = parse_cli_arguments()
 
     startYear, startMonth, startDay = args["startyear"], args["startmonth"], args["startday"]
