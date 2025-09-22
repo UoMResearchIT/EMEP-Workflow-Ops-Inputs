@@ -19,7 +19,7 @@ def get_constants() -> None:
     Returns:
         None
     """
-    global arguments, pmfine_mw
+    global arguments, pmfine_mw, kg_air_per_mol, air_density, pm_coarse_fraction, kg_dividing_factor, ug_multiplying_factor
 
     arguments = {
         "--startyear": "Data Start Year",
@@ -33,6 +33,19 @@ def get_constants() -> None:
         "--outdir": "Output data directory",
         "--wrfdomain" : "WRF domain"
     }
+
+    pmfine_mw = {
+        "SO4": 96, "NO3_f": 62, "NH4_f": 18, "EC_f_wood_new": 12, "EC_f_wood_age": 12,
+        "EC_f_ffuel_new": 12, "EC_f_ffuel_age": 12, "pSO4f": 96, "remPPM25": 12, "OM25_p": 1,
+        "VBS_TEST": 1, "Ash_f": 12, "ffire_BC": 12, "ffire_remPPM25": 12, "SeaSalt_f": 58,
+        "Dust_road_f": 200, "Dust_wb_f": 200, "Dust_sah_f": 200, "NO3_c": 62
+    }
+
+    kg_air_per_mol = 0.0289647
+    air_density = 1.1845
+    pm_coarse_fraction = 0.27
+    kg_dividing_factor = 1000.0
+    ug_multiplying_factor = 1e9
 
 def get_latlon_shape(ds: nc.Dataset) -> tuple:
     """
@@ -101,42 +114,24 @@ def load_4d_emep_data(ds: nc.Dataset, t: int, varName: str, outArray: np.ndarray
 def load_4d_emep_nox(ds, t, outArray):
     no = ds["NO"][t, :, :, :]
     no2 = ds["NO2"][t, :, :, :]
-    outArray[t, :, :, :] = to_np(no) + to_np(no2) # NOX = NO + NO2
+    outArray[t, :, :, :] = to_np(no) + to_np(no2)
 
 def load_4d_emep_pm25(ds, t, outArray):
-    kg_air_per_mol = 0.0289647  # mean molecular weight of dry air in kg/mol
-    air_density = 1.1845 # at 1 atm and 298K (kg/m3)
-
-    pmfine_vars = [
-        "SO4", "NO3_f", "NH4_f", "EC_f_wood_new", "EC_f_wood_age",
-        "EC_f_ffuel_new", "EC_f_ffuel_age", "pSO4f", "remPPM25", "OM25_p",
-        "VBS_TEST", "Ash_f", "ffire_BC", "ffire_remPPM25", "SeaSalt_f",
-        "Dust_road_f", "Dust_wb_f", "Dust_sah_f"
-    ]
-
-    pmfine_mw = {
-        "SO4": 96, "NO3_f": 62, "NH4_f": 18, "EC_f_wood_new": 12, "EC_f_wood_age": 12,
-        "EC_f_ffuel_new": 12, "EC_f_ffuel_age": 12, "pSO4f": 96, "remPPM25": 12, "OM25_p": 1,
-        "VBS_TEST": 1, "Ash_f": 12, "ffire_BC": 12, "ffire_remPPM25": 12, "SeaSalt_f": 58,
-        "Dust_road_f": 200, "Dust_wb_f": 200, "Dust_sah_f": 200, "NO3_c": 62
-    }
-    
-    # Y = X * (MWspec / MWair)
-    # Y: mass fraction (kg/kg), X: mix ratio (mol/mol), MW: molecular weight (kg/mol)
-
     pm25 = np.zeros_like(ds["SO4"][t, :, :, :])
-    for var in pmfine_vars:
-        mw = pmfine_mw[var] / 1000.0
-        pm25 += ds[var][t, :, :, :] * (mw / kg_air_per_mol)
 
-    mw_no3c = pmfine_mw["NO3_c"] / 1000.0
-    pm25 += 0.27 * ds["NO3_c"][t, :, :, :] * (mw_no3c / kg_air_per_mol)
+    for key, val in pmfine_mw.items():
+        mw = val / kg_dividing_factor
+
+        if key == "NO3_c":
+            pm25 += pm_coarse_fraction * ds[key][t, :, :, :] * (mw / kg_air_per_mol)
+        else:
+            pm25 += ds[key][t, :, :, :] * (mw / kg_air_per_mol)
+
     pm25_ugm3 = convert_pm_mixing_to_ugm3(pm25, air_density)
     outArray[t, :, :, :] = to_np(pm25_ugm3)
 
 def convert_pm_mixing_to_ugm3(pm_mixing, air_density):
-    # kg/kg * kg/m3 * 1e9 -> ug/m3
-    return pm_mixing * air_density * 1e9
+    return pm_mixing * air_density * ug_multiplying_factor
     
 def data_extract(wrfDir, emepDir, outputDir, wrfFile, emepFile, outFile):
     """
