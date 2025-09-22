@@ -19,7 +19,7 @@ def get_constants() -> None:
     Returns:
         None
     """
-    global arguments, pmfine_mw, kg_air_per_mol, air_density, pm_coarse_fraction, kg_dividing_factor, ug_multiplying_factor
+    global arguments, pmfine_mw, kg_air_per_mol, air_density, pm_coarse_fraction, g_to_kg_dividing_factor, kg_to_ug_multiplying_factor
 
     arguments = {
         "--startyear": "Data Start Year",
@@ -41,11 +41,11 @@ def get_constants() -> None:
         "Dust_road_f": 200, "Dust_wb_f": 200, "Dust_sah_f": 200, "NO3_c": 62
     }
 
-    kg_air_per_mol = 0.0289647
-    air_density = 1.1845
+    kg_air_per_mol = 0.0289647 # mean molecular weight of dry air in kg/mol
+    air_density = 1.1845 # at 1 atm and 298K (kg/m3)
     pm_coarse_fraction = 0.27
-    kg_dividing_factor = 1000.0
-    ug_multiplying_factor = 1e9
+    g_to_kg_dividing_factor = 1000.0
+    kg_to_ug_multiplying_factor = 1e9
 
 def get_latlon_shape(ds: nc.Dataset) -> tuple:
     """
@@ -111,16 +111,44 @@ def load_4d_emep_data(ds: nc.Dataset, t: int, varName: str, outArray: np.ndarray
     varData = ds[varName][t, :, :, :]
     outArray[t, :, :, :] = to_np(varData)
 
-def load_4d_emep_nox(ds, t, outArray):
+def load_4d_emep_nox(ds: nc.Dataset, t: int, outArray: np.ndarray) -> None:
+    """
+    Load and sum NO and NO2 from EMEP data to produce total NOX for a specific time index.
+    NOX is calculated as:
+        NOX = NO + NO2
+    Args:
+        ds (netCDF4.Dataset): EMEP dataset object.
+        t (int): Time index.
+        outArray (np.ndarray): Output array to store the NOX data.
+    Returns:
+        None
+    """
     no = ds["NO"][t, :, :, :]
     no2 = ds["NO2"][t, :, :, :]
     outArray[t, :, :, :] = to_np(no) + to_np(no2)
 
-def load_4d_emep_pm25(ds, t, outArray):
+def load_4d_emep_pm25(ds: nc.Dataset, t: int, outArray: np.ndarray) -> None:
+    """
+    Calculate and load PM2.5 mass concentration from EMEP species for a specific time index into an output array.
+    For each species, the conversion from mol/mol to kg/kg is performed as:
+        Y = X * (MWspec / MWair)
+    where:
+        Y: mass fraction (kg/kg)
+        X: mixing ratio (mol/mol)
+        MWspec: molecular weight of the species (kg/mol)
+        MWair: mean molecular weight of dry air (kg/mol)
+    The final PM2.5 is then converted to micrograms per cubic meter (ug/m3).
+    Args:
+        ds (netCDF4.Dataset): EMEP dataset object.
+        t (int): Time index.
+        outArray (np.ndarray): Output array to store the PM2.5 data.
+    Returns:
+        None
+    """
     pm25 = np.zeros_like(ds["SO4"][t, :, :, :])
 
     for key, val in pmfine_mw.items():
-        mw = val / kg_dividing_factor
+        mw = val / g_to_kg_dividing_factor
 
         if key == "NO3_c":
             pm25 += pm_coarse_fraction * ds[key][t, :, :, :] * (mw / kg_air_per_mol)
@@ -130,8 +158,18 @@ def load_4d_emep_pm25(ds, t, outArray):
     pm25_ugm3 = convert_pm_mixing_to_ugm3(pm25, air_density)
     outArray[t, :, :, :] = to_np(pm25_ugm3)
 
-def convert_pm_mixing_to_ugm3(pm_mixing, air_density):
-    return pm_mixing * air_density * ug_multiplying_factor
+def convert_pm_mixing_to_ugm3(pm_mixing: np.ndarray, air_density: float) -> np.ndarray:
+    """
+    Convert particulate matter mixing ratio from kg/kg to micrograms per cubic meter (ug/m3).
+    The conversion performed is:
+        kg/kg * kg/m3 * 1e9 -> ug/m3
+    Args:
+        pm_mixing (np.ndarray): Particulate matter mixing ratio in kg/kg.
+        air_density (float): Air density in kg/m3.
+    Returns:
+        np.ndarray: Particulate matter concentration in ug/m3.
+    """
+    return pm_mixing * air_density * kg_to_ug_multiplying_factor
     
 def data_extract(wrfDir, emepDir, outputDir, wrfFile, emepFile, outFile):
     """
@@ -180,13 +218,13 @@ def data_extract(wrfDir, emepDir, outputDir, wrfFile, emepFile, outFile):
             load_3d_wrf_data(wrfDS, t, "U10", u10_var)
             load_3d_wrf_data(wrfDS, t, "V10", v10_var)
             load_3d_wrf_data(wrfDS, t, "T2", t2_var)
-            load_3d_wrf_data(wrfDS, t, "pw", tcwv_var)
-            load_3d_wrf_data(wrfDS, t, "mdbz", maxref_var)
+            load_3d_wrf_data(wrfDS, t, "pw", tcwv_var) # Precipitable Water in kg/m2
+            load_3d_wrf_data(wrfDS, t, "mdbz", maxref_var) # Maximum Reflectivity in dBZ
 
-            load_4d_wrf_data(wrfDS, t, "ua", ua_var)
-            load_4d_wrf_data(wrfDS, t, "va", va_var)
+            load_4d_wrf_data(wrfDS, t, "ua", ua_var) # U-component of Wind on Mass Points in m/s by default
+            load_4d_wrf_data(wrfDS, t, "va", va_var) # V-component of Wind on Mass Points in m/s by default
             load_4d_wrf_data(wrfDS, t, "T", t_var)
-            load_4d_wrf_data(wrfDS, t, "geopt", geopot_var)
+            load_4d_wrf_data(wrfDS, t, "geopt", geopot_var) # Geopotential for the Mass Grid in m2/s2 (variant and liquid skin calculation are disabled by default)
             
             load_4d_emep_data(emepDS, t, "O3", o3_var)
             load_4d_emep_nox(emepDS, t, nox_var)
