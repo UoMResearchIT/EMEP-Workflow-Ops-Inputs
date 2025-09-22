@@ -138,9 +138,8 @@ def convert_pm_mixing_to_ugm3(pm_mixing, air_density):
     # kg/kg * kg/m3 * 1e9 -> ug/m3
     return pm_mixing * air_density * 1e9
     
-    
 def data_extract(wrfDir, emepDir, outputDir, wrfFile, emepFile, outFile):
-   """
+    """
     Extracts and collates data from WRF and EMEP NetCDF files, and writes selected variables to a new NetCDF output file.
     Args:
         wrfDir (str): Directory containing WRF input files.
@@ -152,13 +151,13 @@ def data_extract(wrfDir, emepDir, outputDir, wrfFile, emepFile, outFile):
     Returns:
         None
     """
-   wrfDS = nc.Dataset(path.join(wrfDir, wrfFile))
-   emepDS = nc.Dataset(path.join(emepDir, emepFile))
+    wrfDS = nc.Dataset(path.join(wrfDir, wrfFile))
+    emepDS = nc.Dataset(path.join(emepDir, emepFile))
       
-   ntimes = wrfDS.dimensions["Time"]
-   lat, lon, south_north, west_east, bottom_top = get_latlon_shape(wrfDS)
+    ntimes = wrfDS.dimensions["Time"]
+    lat, lon, south_north, west_east, bottom_top = get_latlon_shape(wrfDS)
 
-   with nc.Dataset(path.join(outputDir, outFile), "w", format="NETCDF4") as out:
+    with nc.Dataset(path.join(outputDir, outFile), "w", format="NETCDF4") as out:
         out.createDimension("Time", None)
         out.createDimension("south_north", south_north)
         out.createDimension("west_east", west_east)
@@ -197,6 +196,7 @@ def data_extract(wrfDir, emepDir, outputDir, wrfFile, emepFile, outFile):
             load_4d_emep_data(emepDS, t, "O3", o3_var)
             load_4d_emep_nox(emepDS, t, nox_var)
             load_4d_emep_pm25(emepDS, t, pm25_var)
+
 def parse_cli_arguments() -> dict:
     """
     Parse command-line arguments for WRF/EMEP data extraction.
@@ -214,7 +214,6 @@ def parse_cli_arguments() -> dict:
             parser.add_argument(arg, required=True, help=help_text, type=int if condition else str)    
 
     return vars(parser.parse_args())
-    
 
 def main() -> None:
     """
