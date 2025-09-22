@@ -214,7 +214,7 @@ def data_extract(wrfDir, emepDir, outputDir, wrfFile, emepFile, outFile):
         maxref_var = out.createVariable("MAXREF", "f4", ("Time", "south_north", "west_east"))
         geopot_var = out.createVariable("Geopotential", "f4", ("Time", "bottom_top", "south_north", "west_east")) 
 
-        for t in range(ntimes.size):
+        for t in range(ntimes.size): # The following descriptions are from https://wrf-python.readthedocs.io/en/latest/diagnostics.html
             load_3d_wrf_data(wrfDS, t, "U10", u10_var)
             load_3d_wrf_data(wrfDS, t, "V10", v10_var)
             load_3d_wrf_data(wrfDS, t, "T2", t2_var)
@@ -224,7 +224,7 @@ def data_extract(wrfDir, emepDir, outputDir, wrfFile, emepFile, outFile):
             load_4d_wrf_data(wrfDS, t, "ua", ua_var) # U-component of Wind on Mass Points in m/s by default
             load_4d_wrf_data(wrfDS, t, "va", va_var) # V-component of Wind on Mass Points in m/s by default
             load_4d_wrf_data(wrfDS, t, "T", t_var)
-            load_4d_wrf_data(wrfDS, t, "geopt", geopot_var) # Geopotential for the Mass Grid in m2/s2 (variant and liquid skin calculation are disabled by default)
+            load_4d_wrf_data(wrfDS, t, "geopt", geopot_var) # Geopotential for the Mass Grid in m2/s2 (variant and liquid skin calculations are disabled by default)
             
             load_4d_emep_data(emepDS, t, "O3", o3_var)
             load_4d_emep_nox(emepDS, t, nox_var)
@@ -277,7 +277,7 @@ def main() -> None:
         currentMonth = currentDate.month
         currentDay = currentDate.day
         
-        wrfFile = f"wrfout_{wrfdom}_{currentYear:02d}-{currentMonth:02d}-{currentDay:02d}_00&#x3a;00&#x3a;00" # colon not allowed by Windows filesystem
+        wrfFile = f"wrfout_{wrfdom}_{currentYear:02d}-{currentMonth:02d}-{currentDay:02d}_00&#x3a;00&#x3a;00" # Colons not allowed by Windows filesystem
         emepFile = f"EMEP_OUT_{currentYear:02d}{currentMonth:02d}{currentDay:02d}.nc"
         outFile = f"WRF_EMEP_{currentYear:02d}{currentMonth:02d}{currentDay:02d}.nc"
         
