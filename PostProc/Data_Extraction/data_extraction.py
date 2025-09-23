@@ -120,7 +120,7 @@ def load_4d_emep_data(ds: nc.Dataset, t: int, varName: str, outArray: np.ndarray
         None
     """
     varData = ds[varName][t, :, :, :]
-    outArray[t, :, :, :] = to_np(varData)
+    outArray[t, :, :, :] = to_np(varData)[::-1, :, :]
 
 def load_4d_emep_nox(ds: nc.Dataset, t: int, outArray: np.ndarray) -> None:
     """
@@ -136,7 +136,7 @@ def load_4d_emep_nox(ds: nc.Dataset, t: int, outArray: np.ndarray) -> None:
     """
     no = ds["NO"][t, :, :, :]
     no2 = ds["NO2"][t, :, :, :]
-    outArray[t, :, :, :] = to_np(no) + to_np(no2)
+    outArray[t, :, :, :] = (to_np(no) + to_np(no2))[::-1, :, :]
 
 def load_4d_emep_pm25(ds: nc.Dataset, t: int, outArray: np.ndarray) -> None:
     """
@@ -167,7 +167,7 @@ def load_4d_emep_pm25(ds: nc.Dataset, t: int, outArray: np.ndarray) -> None:
             pm25 += ds[key][t, :, :, :] * (mw / kg_air_per_mol)
 
     pm25_ugm3 = convert_pm_mixing_to_ugm3(pm25, air_density)
-    outArray[t, :, :, :] = to_np(pm25_ugm3)
+    outArray[t, :, :, :] = to_np(pm25_ugm3)[::-1, :, :]
 
 def convert_pm_mixing_to_ugm3(pm_mixing: np.ndarray, air_density: float) -> np.ndarray:
     """
