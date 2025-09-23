@@ -16,6 +16,12 @@ def get_constants() -> None:
     Globals:
         arguments (dict): Maps CLI argument names to help strings.
         pmfine_mw (dict): Maps PMFINE_GROUP variable names (and NO3_c) to their molecular weights.
+        kg_air_per_mol (float): Mean molecular weight of dry air in kg/mol.
+        air_density (float): Air density at 1 atm and 298K (kg/m3).
+        pm_coarse_fraction (float): Fraction of coarse NO3_c included in PM2.5.
+        g_to_kg_dividing_factor (float): Factor to convert grams to kilograms.
+        kg_to_ug_multiplying_factor (float): Factor to convert kilograms to micrograms.
+        colon (str): Safe colon character for filenames (":" or "&#x3a;" on Windows).
     Returns:
         None
     """
@@ -41,14 +47,14 @@ def get_constants() -> None:
         "Dust_road_f": 200, "Dust_wb_f": 200, "Dust_sah_f": 200, "NO3_c": 62
     }
 
-    kg_air_per_mol = 0.0289647 # mean molecular weight of dry air in kg/mol
-    air_density = 1.1845 # at 1 atm and 298K (kg/m3)
+    kg_air_per_mol = 0.0289647
+    air_density = 1.1845
     pm_coarse_fraction = 0.27
     g_to_kg_dividing_factor = 1000.0
     kg_to_ug_multiplying_factor = 1e9
 
     if os.name == "nt":
-        colon = "&#x3a;" # Colons not allowed by Windows filesystem
+        colon = "&#x3a;"
     else:
         colon = ":"
 
@@ -228,7 +234,7 @@ def data_extract(wrfDir, emepDir, outputDir, wrfFile, emepFile, outFile):
 
             load_4d_wrf_data(wrfDS, t, "ua", ua_var) # U-component of Wind on Mass Points in m/s by default
             load_4d_wrf_data(wrfDS, t, "va", va_var) # V-component of Wind on Mass Points in m/s by default
-            load_4d_wrf_data(wrfDS, t, "T", t_var)
+            load_4d_wrf_data(wrfDS, t, "tk", t_var) # Temperature in Kelvin
             load_4d_wrf_data(wrfDS, t, "geopt", geopot_var) # Geopotential for the Mass Grid in m2/s2 (variant and liquid skin calculations are disabled by default)
             
             load_4d_emep_data(emepDS, t, "O3", o3_var)
