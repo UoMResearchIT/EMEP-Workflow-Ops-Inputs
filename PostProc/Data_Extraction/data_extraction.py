@@ -7,7 +7,7 @@ from wrf import getvar, to_np, latlon_coords
 import netCDF4 as nc
 import argparse
 from datetime import date, timedelta
-from os import path
+import os
 import numpy as np
 
 def get_constants() -> None:
@@ -19,7 +19,7 @@ def get_constants() -> None:
     Returns:
         None
     """
-    global arguments, pmfine_mw, kg_air_per_mol, air_density, pm_coarse_fraction, g_to_kg_dividing_factor, kg_to_ug_multiplying_factor
+    global arguments, pmfine_mw, kg_air_per_mol, air_density, pm_coarse_fraction, g_to_kg_dividing_factor, kg_to_ug_multiplying_factor, colon
 
     arguments = {
         "--startyear": "Data Start Year",
@@ -46,6 +46,11 @@ def get_constants() -> None:
     pm_coarse_fraction = 0.27
     g_to_kg_dividing_factor = 1000.0
     kg_to_ug_multiplying_factor = 1e9
+
+    if os.name == "nt":
+        colon = "&#x3a;" # Colons not allowed by Windows filesystem
+    else:
+        colon = ":"
 
 def get_latlon_shape(ds: nc.Dataset) -> tuple:
     """
@@ -184,13 +189,13 @@ def data_extract(wrfDir, emepDir, outputDir, wrfFile, emepFile, outFile):
     Returns:
         None
     """
-    wrfDS = nc.Dataset(path.join(wrfDir, wrfFile))
-    emepDS = nc.Dataset(path.join(emepDir, emepFile))
+    wrfDS = nc.Dataset(os.path.join(wrfDir, wrfFile))
+    emepDS = nc.Dataset(os.path.join(emepDir, emepFile))
       
     ntimes = wrfDS.dimensions["Time"]
     lat, lon, south_north, west_east, bottom_top = get_latlon_shape(wrfDS)
 
-    with nc.Dataset(path.join(outputDir, outFile), "w", format="NETCDF4") as out:
+    with nc.Dataset(os.path.join(outputDir, outFile), "w", format="NETCDF4") as out:
         out.createDimension("Time", None)
         out.createDimension("south_north", south_north)
         out.createDimension("west_east", west_east)
@@ -277,7 +282,7 @@ def main() -> None:
         currentMonth = currentDate.month
         currentDay = currentDate.day
         
-        wrfFile = f"wrfout_{wrfdom}_{currentYear:02d}-{currentMonth:02d}-{currentDay:02d}_00&#x3a;00&#x3a;00" # Colons not allowed by Windows filesystem
+        wrfFile = f"wrfout_{wrfdom}_{currentYear:02d}-{currentMonth:02d}-{currentDay:02d}_00{colon}00{colon}00"
         emepFile = f"EMEP_OUT_{currentYear:02d}{currentMonth:02d}{currentDay:02d}.nc"
         outFile = f"WRF_EMEP_{currentYear:02d}{currentMonth:02d}{currentDay:02d}.nc"
         
