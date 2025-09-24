@@ -6,7 +6,7 @@ import xarray as xr
 from wrf import getvar, to_np, latlon_coords
 import netCDF4 as nc
 import argparse
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 import os
 import numpy as np
 
@@ -79,6 +79,24 @@ def get_latlon_shape(ds: nc.Dataset) -> tuple:
     bottom_top = pressureSample.sizes['bottom_top']
 
     return(lat, lon, south_north, west_east, bottom_top)
+
+def calculate_time_array(wrfDS, emepDS):
+    wrf_times_raw = wrfDS.variables["Times"][:]
+    emep_times_raw = emepDS.variables["time"][:]
+
+    wrf_times = [b"".join(t).decode("utf-8") if hasattr(t[0], 'decode') else "".join(t) for t in wrf_times_raw]
+    wrf_times_dt = [datetime.strptime(t, "%Y-%m-%d_%H:%M:%S") for t in wrf_times]
+
+    emep_time_units = emepDS.variables["time"].units
+    emep_times_dt = nc.num2date(emep_times_raw, emep_time_units)
+    emep_times_dt_as_datetime = [datetime(t.year, t.month, t.day, t.hour, t.minute, t.second) for t in emep_times_dt]
+
+    common_times = sorted(set(wrf_times_dt) & set(emep_times_dt_as_datetime))
+
+    wrf_indices = [wrf_times_dt.index(t) for t in common_times]
+    emep_indices = [emep_times_dt_as_datetime.index(t) for t in common_times]
+
+    return wrf_indices, emep_indices, common_times
 
 def load_3d_wrf_data(ds: nc.Dataset, t: int, varName: str, outArray: np.ndarray) -> None:
     """
@@ -198,8 +216,8 @@ def data_extract(wrfDir, emepDir, outputDir, wrfFile, emepFile, outFile):
     wrfDS = nc.Dataset(os.path.join(wrfDir, wrfFile))
     emepDS = nc.Dataset(os.path.join(emepDir, emepFile))
       
-    ntimes = wrfDS.dimensions["Time"]
     lat, lon, south_north, west_east, bottom_top = get_latlon_shape(wrfDS)
+    wrf_indices, emep_indices, common_times = calculate_time_array(wrfDS, emepDS)
 
     with nc.Dataset(os.path.join(outputDir, outFile), "w", format="NETCDF4") as out:
         out.createDimension("Time", None)
@@ -225,21 +243,21 @@ def data_extract(wrfDir, emepDir, outputDir, wrfFile, emepFile, outFile):
         maxref_var = out.createVariable("MAXREF", "f4", ("Time", "south_north", "west_east"))
         geopot_var = out.createVariable("Geopotential", "f4", ("Time", "bottom_top", "south_north", "west_east")) 
 
-        for t in range(ntimes.size): # The following descriptions are from https://wrf-python.readthedocs.io/en/latest/diagnostics.html
-            load_3d_wrf_data(wrfDS, t, "U10", u10_var)
-            load_3d_wrf_data(wrfDS, t, "V10", v10_var)
-            load_3d_wrf_data(wrfDS, t, "T2", t2_var)
-            load_3d_wrf_data(wrfDS, t, "pw", tcwv_var) # Precipitable Water in kg/m2
-            load_3d_wrf_data(wrfDS, t, "mdbz", maxref_var) # Maximum Reflectivity in dBZ
+        for wrf_idx, emep_idx, time_val in zip(wrf_indices, emep_indices, common_times): # The following descriptions are from https://wrf-python.readthedocs.io/en/latest/diagnostics.html
+            load_3d_wrf_data(wrfDS, wrf_idx, "U10", u10_var)
+            load_3d_wrf_data(wrfDS, wrf_idx, "V10", v10_var)
+            load_3d_wrf_data(wrfDS, wrf_idx, "T2", t2_var)
+            load_3d_wrf_data(wrfDS, wrf_idx, "pw", tcwv_var) # Precipitable Water in kg/m2
+            load_3d_wrf_data(wrfDS, wrf_idx, "mdbz", maxref_var) # Maximum Reflectivity in dBZ
 
-            load_4d_wrf_data(wrfDS, t, "ua", ua_var) # U-component of Wind on Mass Points in m/s by default
-            load_4d_wrf_data(wrfDS, t, "va", va_var) # V-component of Wind on Mass Points in m/s by default
-            load_4d_wrf_data(wrfDS, t, "tk", t_var) # Temperature in Kelvin
-            load_4d_wrf_data(wrfDS, t, "geopt", geopot_var) # Geopotential for the Mass Grid in m2/s2 (variant and liquid skin calculations are disabled by default)
+            load_4d_wrf_data(wrfDS, wrf_idx, "ua", ua_var) # U-component of Wind on Mass Points in m/s by default
+            load_4d_wrf_data(wrfDS, wrf_idx, "va", va_var) # V-component of Wind on Mass Points in m/s by default
+            load_4d_wrf_data(wrfDS, wrf_idx, "tk", t_var) # Temperature in Kelvin
+            load_4d_wrf_data(wrfDS, wrf_idx, "geopt", geopot_var) # Geopotential for the Mass Grid in m2/s2 (variant and liquid skin calculations are disabled by default)
             
-            load_4d_emep_data(emepDS, t, "O3", o3_var)
-            load_4d_emep_nox(emepDS, t, nox_var)
-            load_4d_emep_pm25(emepDS, t, pm25_var)
+            load_4d_emep_data(emepDS, emep_idx, "O3", o3_var)
+            load_4d_emep_nox(emepDS, emep_idx, nox_var)
+            load_4d_emep_pm25(emepDS, emep_idx, pm25_var)
 
 def parse_cli_arguments() -> dict:
     """
