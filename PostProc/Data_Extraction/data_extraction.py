@@ -25,7 +25,7 @@ def get_constants() -> None:
     Returns:
         None
     """
-    global arguments, pmfine_mw, kg_air_per_mol, air_density, pm_coarse_fraction, g_to_kg_dividing_factor, kg_to_ug_multiplying_factor, colon
+    global arguments, pmfine_mw, kg_air_per_mol, air_density, pm_coarse_fraction, g_to_kg_dividing_factor, kg_to_ug_multiplying_factor, time_units, time_calendar, colon
 
     arguments = {
         "--startyear": "Data Start Year",
@@ -52,6 +52,8 @@ def get_constants() -> None:
     pm_coarse_fraction = 0.27
     g_to_kg_dividing_factor = 1000.0
     kg_to_ug_multiplying_factor = 1e9
+    time_units = "hours since 1970-01-01 00:00:00"
+    time_calendar = "standard"
 
     if os.name == "nt":
         colon = "&#x3a;"
@@ -219,6 +221,8 @@ def data_extract(wrfDir, emepDir, outputDir, wrfFile, emepFile, outFile):
     lat, lon, south_north, west_east, bottom_top = get_latlon_shape(wrfDS)
     wrf_indices, emep_indices, common_times = calculate_time_array(wrfDS, emepDS)
 
+    common_times_num = nc.date2num(common_times, units=time_units, calendar=time_calendar)
+
     with nc.Dataset(os.path.join(outputDir, outFile), "w", format="NETCDF4") as out:
         out.createDimension("Time", None)
         out.createDimension("south_north", south_north)
@@ -227,6 +231,11 @@ def data_extract(wrfDir, emepDir, outputDir, wrfFile, emepFile, outFile):
         
         out.createVariable("XLAT", "f4", ("south_north", "west_east"))[:] = to_np(lat)
         out.createVariable("XLONG", "f4", ("south_north", "west_east"))[:] = to_np(lon)
+
+        time_var = out.createVariable("TIME", "f4", ("Time",))
+        time_var[:] = common_times_num
+        time_var.units = time_units
+        time_var.calendar = time_calendar
 
         u10_var = out.createVariable("U10", "f4", ("Time", "south_north", "west_east"))
         v10_var = out.createVariable("V10", "f4", ("Time", "south_north", "west_east"))
