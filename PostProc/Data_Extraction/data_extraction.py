@@ -260,10 +260,10 @@ def data_extract(wrfDir, emepDir, outputDir, wrfFile, emepFile, outFile):
         time_var.units = time_units
         time_var.calendar = time_calendar
 
-        uvmet_var = out.createVariable("UVMET", "f4", ("Time", "uv", "bottom_top", "south_north", "west_east"))
-        uvmet10_var = out.createVariable("UVMET10", "f4", ("Time", "uv", "south_north", "west_east"))
-        uvmet_wspd_wdir_var = out.createVariable("UVMET WSPD WDIR", "f4", ("Time", "uv", "bottom_top", "south_north", "west_east"))
-        uvmet10_wspd_wdir_var = out.createVariable("UVMET 10 WSPD WDIR", "f4", ("Time", "uv", "south_north", "west_east"))
+        uvmet_var = out.createVariable("UVMET", "f4", ("Time", "uv", "bottom_top", "south_north", "west_east")) # uv = 0 -> U component. uv = 1 -> V component.
+        uvmet10_var = out.createVariable("UVMET10", "f4", ("Time", "uv", "south_north", "west_east")) # uv = 0 -> U component. uv = 1 -> V component.
+        uvmet_wspd_wdir_var = out.createVariable("UVMET WSPD WDIR", "f4", ("Time", "uv", "bottom_top", "south_north", "west_east")) # uv = 0 -> Speed. uv = 1 -> Direction.
+        uvmet10_wspd_wdir_var = out.createVariable("UVMET 10 WSPD WDIR", "f4", ("Time", "uv", "south_north", "west_east")) # uv = 0 -> Speed. uv = 1 -> Direction.
         t2_var  = out.createVariable("T2",  "f4", ("Time", "south_north", "west_east"))
         t_var  = out.createVariable("T",   "f4", ("Time", "bottom_top", "south_north", "west_east"))
 
