@@ -269,7 +269,7 @@ def data_extract(wrfDir, emepDir, outputDir, wrfFile, emepFile, outFile):
             load_4d_wrf_data(wrfDS, wrf_idx, common_index, "ua", ua_var) # U-component of Wind on Mass Points in m/s by default
             load_4d_wrf_data(wrfDS, wrf_idx, common_index, "va", va_var) # V-component of Wind on Mass Points in m/s by default
             load_4d_wrf_data(wrfDS, wrf_idx, common_index, "tk", t_var) # Temperature in Kelvin
-            load_4d_wrf_data(wrfDS, wrf_idx, common_index, "geopt", geopot_var) # Geopotential for the Mass Grid in m2/s2 (variant and liquid skin calculations are disabled by default)
+            load_4d_wrf_data(wrfDS, wrf_idx, common_index, "height", geopot_var) # Model Height for Mass Grid in m by default (msl is True by default)
             
             load_4d_emep_data(emepDS, emep_idx, common_index, "O3", o3_var)
             load_4d_emep_nox(emepDS, emep_idx, common_index, nox_var)
