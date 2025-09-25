@@ -255,21 +255,21 @@ def data_extract(wrfDir, emepDir, outputDir, wrfFile, emepFile, outFile):
         nox_var = out.createVariable("NOX", "f4", ("Time", "bottom_top", "south_north", "west_east"))
         pm25_var = out.createVariable("PM25_TOT", "f4", ("Time", "bottom_top", "south_north", "west_east"))
 
-        tcwv_var = out.createVariable("TCWV", "f4", ("Time", "south_north", "west_east"))
+        tcwv_var = out.createVariable("Precipitable Water", "f4", ("Time", "south_north", "west_east"))
         maxref_var = out.createVariable("MAXREF", "f4", ("Time", "south_north", "west_east"))
-        geopot_var = out.createVariable("Geopotential", "f4", ("Time", "bottom_top", "south_north", "west_east")) 
+        geopot_var = out.createVariable("Geopotential Height", "f4", ("Time", "bottom_top", "south_north", "west_east")) 
 
         for wrf_idx, emep_idx, time_val, common_index in zip(wrf_indices, emep_indices, common_times, range(len(common_times))): # The following descriptions are from https://wrf-python.readthedocs.io/en/latest/diagnostics.html
             load_3d_wrf_data(wrfDS, wrf_idx, common_index, "U10", u10_var)
             load_3d_wrf_data(wrfDS, wrf_idx, common_index, "V10", v10_var)
             load_3d_wrf_data(wrfDS, wrf_idx, common_index, "T2", t2_var)
             load_3d_wrf_data(wrfDS, wrf_idx, common_index, "pw", tcwv_var) # Precipitable Water in kg/m2
-            load_3d_wrf_data(wrfDS, wrf_idx, common_index, "mdbz", maxref_var) # Maximum Reflectivity in dBZ
+            load_3d_wrf_data(wrfDS, wrf_idx, common_index, "mdbz", maxref_var) # Maximum Simulated Radar Reflectivity in dBZ
 
             load_4d_wrf_data(wrfDS, wrf_idx, common_index, "ua", ua_var) # U-component of Wind on Mass Points in m/s by default
             load_4d_wrf_data(wrfDS, wrf_idx, common_index, "va", va_var) # V-component of Wind on Mass Points in m/s by default
             load_4d_wrf_data(wrfDS, wrf_idx, common_index, "tk", t_var) # Temperature in Kelvin
-            load_4d_wrf_data(wrfDS, wrf_idx, common_index, "height", geopot_var) # Model Height for Mass Grid in m by default (msl is True by default)
+            load_4d_wrf_data(wrfDS, wrf_idx, common_index, "height", geopot_var) # Model Height for Mass Grid (from Mean Sea Level) in m by default
             
             load_4d_emep_data(emepDS, emep_idx, common_index, "O3", o3_var)
             load_4d_emep_nox(emepDS, emep_idx, common_index, nox_var)
