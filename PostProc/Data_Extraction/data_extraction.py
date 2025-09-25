@@ -6,7 +6,7 @@ import xarray as xr
 from wrf import getvar, to_np, latlon_coords
 import netCDF4 as nc
 import argparse
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 import os
 import numpy as np
 
@@ -21,11 +21,13 @@ def get_constants() -> None:
         pm_coarse_fraction (float): Fraction of coarse NO3_c included in PM2.5.
         g_to_kg_dividing_factor (float): Factor to convert grams to kilograms.
         kg_to_ug_multiplying_factor (float): Factor to convert kilograms to micrograms.
+        time_units (str): Time units for NetCDF output.
+        time_calendar (str): Calendar type for NetCDF output.
         colon (str): Safe colon character for filenames (":" or "&#x3a;" on Windows).
     Returns:
         None
     """
-    global arguments, pmfine_mw, kg_air_per_mol, air_density, pm_coarse_fraction, g_to_kg_dividing_factor, kg_to_ug_multiplying_factor, colon
+    global arguments, pmfine_mw, kg_air_per_mol, air_density, pm_coarse_fraction, g_to_kg_dividing_factor, kg_to_ug_multiplying_factor, time_units, time_calendar, colon
 
     arguments = {
         "--startyear": "Data Start Year",
@@ -52,6 +54,8 @@ def get_constants() -> None:
     pm_coarse_fraction = 0.27
     g_to_kg_dividing_factor = 1000.0
     kg_to_ug_multiplying_factor = 1e9
+    time_units = "hours since 1970-01-01 00:00:00"
+    time_calendar = "standard"
 
     if os.name == "nt":
         colon = "&#x3a;"
@@ -80,49 +84,70 @@ def get_latlon_shape(ds: nc.Dataset) -> tuple:
 
     return(lat, lon, south_north, west_east, bottom_top)
 
-def load_3d_wrf_data(ds: nc.Dataset, t: int, varName: str, outArray: np.ndarray) -> None:
+def calculate_time_array(wrfDS, emepDS):
+    wrf_times_raw = wrfDS.variables["Times"][:]
+    emep_times_raw = emepDS.variables["time"][:]
+
+    wrf_times = [b"".join(t).decode("utf-8") if hasattr(t[0], 'decode') else "".join(t) for t in wrf_times_raw]
+    wrf_times_dt = [datetime.strptime(t, "%Y-%m-%d_%H:%M:%S") for t in wrf_times]
+
+    emep_time_units = emepDS.variables["time"].units
+    emep_times_dt = nc.num2date(emep_times_raw, emep_time_units)
+    emep_times_dt_as_datetime = [datetime(t.year, t.month, t.day, t.hour, t.minute, t.second) for t in emep_times_dt]
+
+    common_times = sorted(set(wrf_times_dt) & set(emep_times_dt_as_datetime))
+
+    wrf_indices = [wrf_times_dt.index(t) for t in common_times]
+    emep_indices = [emep_times_dt_as_datetime.index(t) for t in common_times]
+
+    return wrf_indices, emep_indices, common_times
+
+def load_3d_wrf_data(ds: nc.Dataset, t: int, common_index: int, varName: str, outArray: np.ndarray) -> None:
     """
     Load a 3D WRF variable for a specific time index into an output array.
     Args:
         ds (netCDF4.Dataset): WRF dataset object.
         t (int): Time index.
+        common_index (int): Common index for output array.
         varName (str): Name of the variable to extract.
         outArray (np.ndarray): Output array to store the data.
     Returns:
         None
     """
     varData = getvar(ds, varName, timeidx=t)
-    outArray[t, :, :] = to_np(varData)
+    outArray[common_index, :, :] = to_np(varData)
 
-def load_4d_wrf_data(ds: nc.Dataset, t: int, varName: str, outArray: np.ndarray) -> None:
+def load_4d_wrf_data(ds: nc.Dataset, t: int, common_index: int, varName: str, outArray: np.ndarray) -> None:
     """
     Load a 4D WRF variable for a specific time index into an output array.
     Args:
         ds (netCDF4.Dataset): WRF dataset object.
         t (int): Time index.
+        common_index (int): Common index for output array.
         varName (str): Name of the variable to extract.
         outArray (np.ndarray): Output array to store the data.
     Returns:
         None
     """
     varData = getvar(ds, varName, timeidx=t)
-    outArray[t, :, :, :] = to_np(varData)
+    outArray[common_index, :, :, :] = to_np(varData)
 
-def load_4d_emep_data(ds: nc.Dataset, t: int, varName: str, outArray: np.ndarray) -> None:
+def load_4d_emep_data(ds: nc.Dataset, t: int, common_index: int, varName: str, outArray: np.ndarray) -> None:
     """
     Load a 4D EMEP variable for a specific time index into an output array.
     Args:
         ds (netCDF4.Dataset): EMEP dataset object.
         t (int): Time index.
+        common_index (int): Common index for output array.
         varName (str): Name of the variable to extract.
         outArray (np.ndarray): Output array to store the data.
     Returns:
         None
     """
     varData = ds[varName][t, :, :, :]
-    outArray[t, :, :, :] = to_np(varData)[::-1, :, :]
+    outArray[common_index, :, :, :] = to_np(varData)[::-1, :, :]
 
-def load_4d_emep_nox(ds: nc.Dataset, t: int, outArray: np.ndarray) -> None:
+def load_4d_emep_nox(ds: nc.Dataset, t: int, common_index: int, outArray: np.ndarray) -> None:
     """
     Load and sum NO and NO2 from EMEP data to produce total NOX for a specific time index.
     NOX is calculated as:
@@ -130,15 +155,16 @@ def load_4d_emep_nox(ds: nc.Dataset, t: int, outArray: np.ndarray) -> None:
     Args:
         ds (netCDF4.Dataset): EMEP dataset object.
         t (int): Time index.
+        common_index (int): Common index for output array.
         outArray (np.ndarray): Output array to store the NOX data.
     Returns:
         None
     """
     no = ds["NO"][t, :, :, :]
     no2 = ds["NO2"][t, :, :, :]
-    outArray[t, :, :, :] = (to_np(no) + to_np(no2))[::-1, :, :]
+    outArray[common_index, :, :, :] = (to_np(no) + to_np(no2))[::-1, :, :]
 
-def load_4d_emep_pm25(ds: nc.Dataset, t: int, outArray: np.ndarray) -> None:
+def load_4d_emep_pm25(ds: nc.Dataset, t: int, common_index: int, outArray: np.ndarray) -> None:
     """
     Calculate and load PM2.5 mass concentration from EMEP species for a specific time index into an output array.
     For each species, the conversion from mol/mol to kg/kg is performed as:
@@ -152,6 +178,7 @@ def load_4d_emep_pm25(ds: nc.Dataset, t: int, outArray: np.ndarray) -> None:
     Args:
         ds (netCDF4.Dataset): EMEP dataset object.
         t (int): Time index.
+        common_index (int): Common index for output array.
         outArray (np.ndarray): Output array to store the PM2.5 data.
     Returns:
         None
@@ -167,7 +194,7 @@ def load_4d_emep_pm25(ds: nc.Dataset, t: int, outArray: np.ndarray) -> None:
             pm25 += ds[key][t, :, :, :] * (mw / kg_air_per_mol)
 
     pm25_ugm3 = convert_pm_mixing_to_ugm3(pm25, air_density)
-    outArray[t, :, :, :] = to_np(pm25_ugm3)[::-1, :, :]
+    outArray[common_index, :, :, :] = to_np(pm25_ugm3)[::-1, :, :]
 
 def convert_pm_mixing_to_ugm3(pm_mixing: np.ndarray, air_density: float) -> np.ndarray:
     """
@@ -181,7 +208,7 @@ def convert_pm_mixing_to_ugm3(pm_mixing: np.ndarray, air_density: float) -> np.n
         np.ndarray: Particulate matter concentration in ug/m3.
     """
     return pm_mixing * air_density * kg_to_ug_multiplying_factor
-    
+
 def data_extract(wrfDir, emepDir, outputDir, wrfFile, emepFile, outFile):
     """
     Extracts and collates data from WRF and EMEP NetCDF files, and writes selected variables to a new NetCDF output file.
@@ -198,8 +225,10 @@ def data_extract(wrfDir, emepDir, outputDir, wrfFile, emepFile, outFile):
     wrfDS = nc.Dataset(os.path.join(wrfDir, wrfFile))
     emepDS = nc.Dataset(os.path.join(emepDir, emepFile))
       
-    ntimes = wrfDS.dimensions["Time"]
     lat, lon, south_north, west_east, bottom_top = get_latlon_shape(wrfDS)
+    wrf_indices, emep_indices, common_times = calculate_time_array(wrfDS, emepDS)
+
+    common_times_num = nc.date2num(common_times, units=time_units, calendar=time_calendar)
 
     with nc.Dataset(os.path.join(outputDir, outFile), "w", format="NETCDF4") as out:
         out.createDimension("Time", None)
@@ -209,6 +238,11 @@ def data_extract(wrfDir, emepDir, outputDir, wrfFile, emepFile, outFile):
         
         out.createVariable("XLAT", "f4", ("south_north", "west_east"))[:] = to_np(lat)
         out.createVariable("XLONG", "f4", ("south_north", "west_east"))[:] = to_np(lon)
+
+        time_var = out.createVariable("TIME", "f4", ("Time",))
+        time_var[:] = common_times_num
+        time_var.units = time_units
+        time_var.calendar = time_calendar
 
         u10_var = out.createVariable("U10", "f4", ("Time", "south_north", "west_east"))
         v10_var = out.createVariable("V10", "f4", ("Time", "south_north", "west_east"))
@@ -225,21 +259,21 @@ def data_extract(wrfDir, emepDir, outputDir, wrfFile, emepFile, outFile):
         maxref_var = out.createVariable("MAXREF", "f4", ("Time", "south_north", "west_east"))
         geopot_var = out.createVariable("Geopotential", "f4", ("Time", "bottom_top", "south_north", "west_east")) 
 
-        for t in range(ntimes.size): # The following descriptions are from https://wrf-python.readthedocs.io/en/latest/diagnostics.html
-            load_3d_wrf_data(wrfDS, t, "U10", u10_var)
-            load_3d_wrf_data(wrfDS, t, "V10", v10_var)
-            load_3d_wrf_data(wrfDS, t, "T2", t2_var)
-            load_3d_wrf_data(wrfDS, t, "pw", tcwv_var) # Precipitable Water in kg/m2
-            load_3d_wrf_data(wrfDS, t, "mdbz", maxref_var) # Maximum Reflectivity in dBZ
+        for wrf_idx, emep_idx, time_val, common_index in zip(wrf_indices, emep_indices, common_times, range(len(common_times))): # The following descriptions are from https://wrf-python.readthedocs.io/en/latest/diagnostics.html
+            load_3d_wrf_data(wrfDS, wrf_idx, common_index, "U10", u10_var)
+            load_3d_wrf_data(wrfDS, wrf_idx, common_index, "V10", v10_var)
+            load_3d_wrf_data(wrfDS, wrf_idx, common_index, "T2", t2_var)
+            load_3d_wrf_data(wrfDS, wrf_idx, common_index, "pw", tcwv_var) # Precipitable Water in kg/m2
+            load_3d_wrf_data(wrfDS, wrf_idx, common_index, "mdbz", maxref_var) # Maximum Reflectivity in dBZ
 
-            load_4d_wrf_data(wrfDS, t, "ua", ua_var) # U-component of Wind on Mass Points in m/s by default
-            load_4d_wrf_data(wrfDS, t, "va", va_var) # V-component of Wind on Mass Points in m/s by default
-            load_4d_wrf_data(wrfDS, t, "tk", t_var) # Temperature in Kelvin
-            load_4d_wrf_data(wrfDS, t, "geopt", geopot_var) # Geopotential for the Mass Grid in m2/s2 (variant and liquid skin calculations are disabled by default)
+            load_4d_wrf_data(wrfDS, wrf_idx, common_index, "ua", ua_var) # U-component of Wind on Mass Points in m/s by default
+            load_4d_wrf_data(wrfDS, wrf_idx, common_index, "va", va_var) # V-component of Wind on Mass Points in m/s by default
+            load_4d_wrf_data(wrfDS, wrf_idx, common_index, "tk", t_var) # Temperature in Kelvin
+            load_4d_wrf_data(wrfDS, wrf_idx, common_index, "geopt", geopot_var) # Geopotential for the Mass Grid in m2/s2 (variant and liquid skin calculations are disabled by default)
             
-            load_4d_emep_data(emepDS, t, "O3", o3_var)
-            load_4d_emep_nox(emepDS, t, nox_var)
-            load_4d_emep_pm25(emepDS, t, pm25_var)
+            load_4d_emep_data(emepDS, emep_idx, common_index, "O3", o3_var)
+            load_4d_emep_nox(emepDS, emep_idx, common_index, nox_var)
+            load_4d_emep_pm25(emepDS, emep_idx, common_index, pm25_var)
 
 def parse_cli_arguments() -> dict:
     """
