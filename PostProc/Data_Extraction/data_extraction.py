@@ -117,6 +117,22 @@ def load_3d_wrf_data(ds: nc.Dataset, t: int, common_index: int, varName: str, ou
     varData = getvar(ds, varName, timeidx=t)
     outArray[common_index, :, :] = to_np(varData)
 
+def load_3d_wrf_data_uv(ds: nc.Dataset, t: int, common_index: int, varName: str, outArray: np.ndarray, element_index: int) -> None:
+    """
+    Load a 3D WRF wind variable for a specific time index into an output array.
+    Args:
+        ds (netCDF4.Dataset): WRF dataset object.
+        t (int): Time index.
+        common_index (int): Common index for output array.
+        varName (str): Name of the variable to extract.
+        outArray (np.ndarray): Output array to store the data.
+        element_index (int): Specifies index to choose between u/v or speed/direction.
+    Returns:
+        None
+    """
+    varData = getvar(ds, varName, timeidx=t)
+    outArray[common_index, :, :] = to_np(varData[element_index, :, :])
+
 def load_4d_wrf_data(ds: nc.Dataset, t: int, common_index: int, varName: str, outArray: np.ndarray) -> None:
     """
     Load a 4D WRF variable for a specific time index into an output array.
@@ -131,6 +147,22 @@ def load_4d_wrf_data(ds: nc.Dataset, t: int, common_index: int, varName: str, ou
     """
     varData = getvar(ds, varName, timeidx=t)
     outArray[common_index, :, :, :] = to_np(varData)
+
+def load_4d_wrf_data_uv(ds: nc.Dataset, t: int, common_index: int, varName: str, outArray: np.ndarray, element_index: int) -> None:
+    """
+    Load a 4D WRF wind variable for a specific time index into an output array.
+    Args:
+        ds (netCDF4.Dataset): WRF dataset object.
+        t (int): Time index.
+        common_index (int): Common index for output array.
+        varName (str): Name of the variable to extract.
+        outArray (np.ndarray): Output array to store the data.
+        element_index (int): Specifies index to choose between u/v or speed/direction.
+    Returns:
+        None
+    """
+    varData = getvar(ds, varName, timeidx=t)
+    outArray[common_index, :, :, :] = to_np(varData[element_index, :, :, :])
 
 def load_4d_emep_data(ds: nc.Dataset, t: int, common_index: int, varName: str, outArray: np.ndarray) -> None:
     """
@@ -244,32 +276,41 @@ def data_extract(wrfDir, emepDir, outputDir, wrfFile, emepFile, outFile):
         time_var.units = time_units
         time_var.calendar = time_calendar
 
-        u10_var = out.createVariable("U10", "f4", ("Time", "south_north", "west_east"))
-        v10_var = out.createVariable("V10", "f4", ("Time", "south_north", "west_east"))
+        umet_var = out.createVariable("UMET", "f4", ("Time", "bottom_top", "south_north", "west_east"))
+        umet10_var = out.createVariable("UMET10", "f4", ("Time", "south_north", "west_east"))
+        uvmet_wspd_var = out.createVariable("UVMET_WSPD", "f4", ("Time", "bottom_top", "south_north", "west_east"))
+        uvmet10_wspd_var = out.createVariable("UVMET10_WSPD", "f4", ("Time", "south_north", "west_east"))
+        vmet_var = out.createVariable("VMET", "f4", ("Time", "bottom_top", "south_north", "west_east"))
+        vmet10_var = out.createVariable("VMET10", "f4", ("Time", "south_north", "west_east"))
+        uvmet_wdir_var = out.createVariable("UVMET_WDIR", "f4", ("Time", "bottom_top", "south_north", "west_east"))
+        uvmet10_wdir_var = out.createVariable("UVMET10_WDIR", "f4", ("Time", "south_north", "west_east"))
+
         t2_var  = out.createVariable("T2",  "f4", ("Time", "south_north", "west_east"))
-        ua_var  = out.createVariable("U",   "f4", ("Time", "bottom_top", "south_north", "west_east"))
-        va_var  = out.createVariable("V",   "f4", ("Time", "bottom_top", "south_north", "west_east"))
         t_var  = out.createVariable("T",   "f4", ("Time", "bottom_top", "south_north", "west_east"))
+        tcwv_var = out.createVariable("Precipitable_Water", "f4", ("Time", "south_north", "west_east"))
+        maxref_var = out.createVariable("MAXREF", "f4", ("Time", "south_north", "west_east"))
+        geopot_var = out.createVariable("Geopotential_Height", "f4", ("Time", "bottom_top", "south_north", "west_east"))
 
         o3_var  = out.createVariable("O3", "f4", ("Time", "bottom_top", "south_north", "west_east"))
         nox_var = out.createVariable("NOX", "f4", ("Time", "bottom_top", "south_north", "west_east"))
-        pm25_var = out.createVariable("PM25_TOT", "f4", ("Time", "bottom_top", "south_north", "west_east"))
-
-        tcwv_var = out.createVariable("TCWV", "f4", ("Time", "south_north", "west_east"))
-        maxref_var = out.createVariable("MAXREF", "f4", ("Time", "south_north", "west_east"))
-        geopot_var = out.createVariable("Geopotential", "f4", ("Time", "bottom_top", "south_north", "west_east")) 
+        pm25_var = out.createVariable("PM25_TOT", "f4", ("Time", "bottom_top", "south_north", "west_east")) 
 
         for wrf_idx, emep_idx, time_val, common_index in zip(wrf_indices, emep_indices, common_times, range(len(common_times))): # The following descriptions are from https://wrf-python.readthedocs.io/en/latest/diagnostics.html
-            load_3d_wrf_data(wrfDS, wrf_idx, common_index, "U10", u10_var)
-            load_3d_wrf_data(wrfDS, wrf_idx, common_index, "V10", v10_var)
             load_3d_wrf_data(wrfDS, wrf_idx, common_index, "T2", t2_var)
             load_3d_wrf_data(wrfDS, wrf_idx, common_index, "pw", tcwv_var) # Precipitable Water in kg/m2
-            load_3d_wrf_data(wrfDS, wrf_idx, common_index, "mdbz", maxref_var) # Maximum Reflectivity in dBZ
+            load_3d_wrf_data(wrfDS, wrf_idx, common_index, "mdbz", maxref_var) # Maximum Simulated Radar Reflectivity in dBZ
 
-            load_4d_wrf_data(wrfDS, wrf_idx, common_index, "ua", ua_var) # U-component of Wind on Mass Points in m/s by default
-            load_4d_wrf_data(wrfDS, wrf_idx, common_index, "va", va_var) # V-component of Wind on Mass Points in m/s by default
             load_4d_wrf_data(wrfDS, wrf_idx, common_index, "tk", t_var) # Temperature in Kelvin
-            load_4d_wrf_data(wrfDS, wrf_idx, common_index, "geopt", geopot_var) # Geopotential for the Mass Grid in m2/s2 (variant and liquid skin calculations are disabled by default)
+            load_4d_wrf_data(wrfDS, wrf_idx, common_index, "height", geopot_var) # Model Height for Mass Grid (from Mean Sea Level) in m by default
+
+            load_4d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet", umet_var, 0) # U Component of Wind Rotated to Earth Coordinates (in m/s by default)
+            load_3d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet10", umet10_var, 0) # 10m U Component of Wind Rotated to Earth Coordinates (in m/s by default)
+            load_4d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet_wspd_wdir", uvmet_wspd_var, 0) # Wind Speed Rotated to Earth Coordinates (in m/s by default)
+            load_3d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet10_wspd_wdir", uvmet10_wspd_var, 0) # 10m Wind Speed Rotated to Earth Coordinates (in m/s by default)
+            load_4d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet", vmet_var, 1) # V Component of Wind Rotated to Earth Coordinates (in m/s by default)
+            load_3d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet10", vmet10_var, 1) # 10m V Component of Wind Rotated to Earth Coordinates (in m/s by default)
+            load_4d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet_wspd_wdir", uvmet_wdir_var, 1) # Wind Direction Rotated to Earth Coordinates (in m/s by default)
+            load_3d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet10_wspd_wdir", uvmet10_wdir_var, 1) # 10m Wind Direction Rotated to Earth Coordinates (in m/s by default)
             
             load_4d_emep_data(emepDS, emep_idx, common_index, "O3", o3_var)
             load_4d_emep_nox(emepDS, emep_idx, common_index, nox_var)
