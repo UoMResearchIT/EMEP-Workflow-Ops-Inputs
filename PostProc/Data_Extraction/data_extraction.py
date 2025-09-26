@@ -16,18 +16,17 @@ def get_constants() -> None:
     Globals:
         arguments (dict): Maps CLI argument names to help strings.
         pmfine_mw (dict): Maps PMFINE_GROUP variable names (and NO3_c) to their molecular weights.
+        attributes (dict): Maps output dataset variables to respective attributes.
         kg_air_per_mol (float): Mean molecular weight of dry air in kg/mol.
         air_density (float): Air density at 1 atm and 298K (kg/m3).
         pm_coarse_fraction (float): Fraction of coarse NO3_c included in PM2.5.
         g_to_kg_dividing_factor (float): Factor to convert grams to kilograms.
         kg_to_ug_multiplying_factor (float): Factor to convert kilograms to micrograms.
-        time_units (str): Time units for NetCDF output.
-        time_calendar (str): Calendar type for NetCDF output.
         colon (str): Safe colon character for filenames (":" or "&#x3a;" on Windows).
     Returns:
         None
     """
-    global arguments, pmfine_mw, kg_air_per_mol, air_density, pm_coarse_fraction, g_to_kg_dividing_factor, kg_to_ug_multiplying_factor, time_units, time_calendar, colon
+    global arguments, pmfine_mw, attributes, kg_air_per_mol, air_density, pm_coarse_fraction, g_to_kg_dividing_factor, kg_to_ug_multiplying_factor, colon
 
     arguments = {
         "--startyear": "Data Start Year",
@@ -49,13 +48,15 @@ def get_constants() -> None:
         "Dust_road_f": 200, "Dust_wb_f": 200, "Dust_sah_f": 200, "NO3_c": 62
     }
 
+    attributes = {
+        "TIME": {"units": "hours since 1970-01-01 00:00:00", "calendar": "standard"}
+    }
+
     kg_air_per_mol = 0.0289647
     air_density = 1.1845
     pm_coarse_fraction = 0.27
     g_to_kg_dividing_factor = 1000.0
     kg_to_ug_multiplying_factor = 1e9
-    time_units = "hours since 1970-01-01 00:00:00"
-    time_calendar = "standard"
 
     if os.name == "nt":
         colon = "&#x3a;"
@@ -101,6 +102,18 @@ def calculate_time_array(wrfDS, emepDS):
     emep_indices = [emep_times_dt_as_datetime.index(t) for t in common_times]
 
     return wrf_indices, emep_indices, common_times
+
+def assign_metadata(ds: nc.Dataset) -> None:
+    """
+    Assign attributes to output dataset variables.
+    Args:
+        ds (netCDF4.Dataset): Output dataset object.
+    Returns:
+        None
+    """
+    for var, attrs in attributes.items():
+        for key, val in attrs.items():
+            ds[var].__setattr__(key, val)
 
 def load_3d_wrf_data(ds: nc.Dataset, t: int, common_index: int, varName: str, outArray: np.ndarray) -> None:
     """
@@ -260,7 +273,7 @@ def data_extract(wrfDir, emepDir, outputDir, wrfFile, emepFile, outFile):
     lat, lon, south_north, west_east, bottom_top = get_latlon_shape(wrfDS)
     wrf_indices, emep_indices, common_times = calculate_time_array(wrfDS, emepDS)
 
-    common_times_num = nc.date2num(common_times, units=time_units, calendar=time_calendar)
+    common_times_num = nc.date2num(common_times, units=attributes["TIME"]["units"], calendar=attributes["TIME"]["calendar"])
 
     with nc.Dataset(os.path.join(outputDir, outFile), "w", format="NETCDF4") as out:
         out.createDimension("Time", None)
@@ -270,11 +283,7 @@ def data_extract(wrfDir, emepDir, outputDir, wrfFile, emepFile, outFile):
         
         out.createVariable("XLAT", "f4", ("south_north", "west_east"))[:] = to_np(lat)
         out.createVariable("XLONG", "f4", ("south_north", "west_east"))[:] = to_np(lon)
-
-        time_var = out.createVariable("TIME", "f4", ("Time",))
-        time_var[:] = common_times_num
-        time_var.units = time_units
-        time_var.calendar = time_calendar
+        out.createVariable("TIME", "f4", ("Time",))[:] = common_times_num
 
         umet_var = out.createVariable("UMET", "f4", ("Time", "bottom_top", "south_north", "west_east"))
         umet10_var = out.createVariable("UMET10", "f4", ("Time", "south_north", "west_east"))
@@ -293,7 +302,9 @@ def data_extract(wrfDir, emepDir, outputDir, wrfFile, emepFile, outFile):
 
         o3_var  = out.createVariable("O3", "f4", ("Time", "bottom_top", "south_north", "west_east"))
         nox_var = out.createVariable("NOX", "f4", ("Time", "bottom_top", "south_north", "west_east"))
-        pm25_var = out.createVariable("PM25_TOT", "f4", ("Time", "bottom_top", "south_north", "west_east")) 
+        pm25_var = out.createVariable("PM25_TOT", "f4", ("Time", "bottom_top", "south_north", "west_east"))
+
+        assign_metadata(out) 
 
         for wrf_idx, emep_idx, time_val, common_index in zip(wrf_indices, emep_indices, common_times, range(len(common_times))): # The following descriptions are from https://wrf-python.readthedocs.io/en/latest/diagnostics.html
             load_3d_wrf_data(wrfDS, wrf_idx, common_index, "T2", t2_var)
