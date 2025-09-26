@@ -58,11 +58,12 @@ def get_constants() -> None:
         "title": "output dataset"
     }
 
-    # Attributes specified below take precedence OVER those specified above (if same). They are case sensitive (TITLE != title).
+    # Attributes specified below take precedence OVER those specified above (if same name in output ds).
+    # They are case sensitive (TITLE != title).
 
-    global_attributes_to_read = {
-        "WRF": ["START_DATE"],
-        "EMEP": ["model"]
+    global_attributes_to_read = { # {"attr in input ds": "attr in output ds"}
+        "WRF": {"SIMULATION_START_DATE": "wrf_sim_start"},
+        "EMEP": {"model": "emep_model"}
     }
 
     kg_air_per_mol = 0.0289647
@@ -136,11 +137,11 @@ def read_global_attributes(wrf: nc.Dataset, emep: nc.Dataset) -> None:
     Returns:
         None
     """
-    for attr in global_attributes_to_read["WRF"]:
-        global_attributes[attr] = wrf.__getattr__(attr)
+    for key, val in global_attributes_to_read["WRF"].items():
+        global_attributes[val] = wrf.__getattr__(key)
 
-    for attr in global_attributes_to_read["EMEP"]:
-        global_attributes[attr] = emep.__getattr__(attr)
+    for key, val in global_attributes_to_read["EMEP"].items():
+        global_attributes[val] = emep.__getattr__(key)
 
 def assign_metadata(ds: nc.Dataset) -> None:
     """
