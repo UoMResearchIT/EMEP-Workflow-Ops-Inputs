@@ -138,10 +138,10 @@ def read_global_attributes(wrf: nc.Dataset, emep: nc.Dataset) -> None:
         None
     """
     for key, val in global_attributes_to_read["WRF"].items():
-        global_attributes[val] = wrf.__getattr__(key)
+        global_attributes[val] = getattr(wrf, key, "None")
 
     for key, val in global_attributes_to_read["EMEP"].items():
-        global_attributes[val] = emep.__getattr__(key)
+        global_attributes[val] = getattr(emep, key, "None")
 
 def assign_metadata(ds: nc.Dataset) -> None:
     """
