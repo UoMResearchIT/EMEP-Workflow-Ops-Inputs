@@ -18,6 +18,7 @@ def get_constants() -> None:
         pmfine_mw (dict): Maps PMFINE_GROUP variable names (and NO3_c) to their molecular weights.
         attributes (dict): Maps output dataset variables to respective attributes.
         global_attributes (dict): Maps output dataset global attributes to values.
+        global_attributes_to_read (dict): Maps input datasets to the global attributes that are read from them.
         kg_air_per_mol (float): Mean molecular weight of dry air in kg/mol.
         air_density (float): Air density at 1 atm and 298K (kg/m3).
         pm_coarse_fraction (float): Fraction of coarse NO3_c included in PM2.5.
@@ -27,7 +28,7 @@ def get_constants() -> None:
     Returns:
         None
     """
-    global arguments, pmfine_mw, attributes, global_attributes, kg_air_per_mol, air_density, pm_coarse_fraction, g_to_kg_dividing_factor, kg_to_ug_multiplying_factor, colon
+    global arguments, pmfine_mw, attributes, global_attributes, global_attributes_to_read, kg_air_per_mol, air_density, pm_coarse_fraction, g_to_kg_dividing_factor, kg_to_ug_multiplying_factor, colon
 
     arguments = {
         "--startyear": "Data Start Year",
@@ -57,6 +58,13 @@ def get_constants() -> None:
         "title": "output dataset"
     }
 
+    # Attributes specified below take precedence OVER those specified above (if same). They are case sensitive (TITLE != title).
+
+    global_attributes_to_read = {
+        "WRF": ["START_DATE"],
+        "EMEP": ["model"]
+    }
+
     kg_air_per_mol = 0.0289647
     air_density = 1.1845
     pm_coarse_fraction = 0.27
@@ -77,9 +85,9 @@ def get_latlon_shape(ds: nc.Dataset) -> tuple:
         tuple: (lat, lon, south_north, west_east, bottom_top)
             - lat: 2D array of latitudes
             - lon: 2D array of longitudes
-            - south_north: int, number of grid points in south-north direction
-            - west_east: int, number of grid points in west-east direction
-            - bottom_top: int, number of vertical levels
+            - south_north (int): Number of grid points in south-north direction
+            - west_east (int): Number of grid points in west-east direction
+            - bottom_top (int): Number of vertical levels
     """
     pressureSample = getvar(ds, "pressure", timeidx=0)
     lat, lon = latlon_coords(pressureSample)
@@ -90,7 +98,18 @@ def get_latlon_shape(ds: nc.Dataset) -> tuple:
 
     return(lat, lon, south_north, west_east, bottom_top)
 
-def calculate_time_array(wrfDS, emepDS):
+def calculate_time_array(wrfDS: nc.Dataset, emepDS: nc.Dataset) -> tuple:
+    """
+    Calculate the indices and common times where WRF and EMEP datasets overlap.
+    Args:
+        wrfDS (netCDF4.Dataset): WRF dataset object.
+        emepDS (netCDF4.Dataset): EMEP dataset object.
+    Returns:
+        tuple: (wrf_indices, emep_indices, common_times)
+            - wrf_indices (list[int]): Indices in the WRF dataset for each common time.
+            - emep_indices (list[int]): Indices in the EMEP dataset for each common time.
+            - common_times (list[datetime.datetime]): Sorted list of common datetime objects present in both datasets.
+    """
     wrf_times_raw = wrfDS.variables["Times"][:]
     emep_times_raw = emepDS.variables["time"][:]
 
@@ -107,6 +126,21 @@ def calculate_time_array(wrfDS, emepDS):
     emep_indices = [emep_times_dt_as_datetime.index(t) for t in common_times]
 
     return wrf_indices, emep_indices, common_times
+
+def read_global_attributes(wrf: nc.Dataset, emep: nc.Dataset) -> None:
+    """
+    Read global attributes from input datasets.
+    Args:
+        wrf (netCDF4.Dataset): WRF dataset object.
+        emep (netCDF4.Dataset): EMEP dataset object.
+    Returns:
+        None
+    """
+    for attr in global_attributes_to_read["WRF"]:
+        global_attributes[attr] = wrf.__getattr__(attr)
+
+    for attr in global_attributes_to_read["EMEP"]:
+        global_attributes[attr] = emep.__getattr__(attr)
 
 def assign_metadata(ds: nc.Dataset) -> None:
     """
@@ -312,6 +346,7 @@ def data_extract(wrfDir, emepDir, outputDir, wrfFile, emepFile, outFile):
         nox_var = out.createVariable("NOX", "f4", ("Time", "bottom_top", "south_north", "west_east"))
         pm25_var = out.createVariable("PM25_TOT", "f4", ("Time", "bottom_top", "south_north", "west_east"))
 
+        read_global_attributes(wrfDS, emepDS)
         assign_metadata(out) 
 
         for wrf_idx, emep_idx, time_val, common_index in zip(wrf_indices, emep_indices, common_times, range(len(common_times))): # The following descriptions are from https://wrf-python.readthedocs.io/en/latest/diagnostics.html
