@@ -17,6 +17,7 @@ def get_constants() -> None:
         arguments (dict): Maps CLI argument names to help strings.
         pmfine_mw (dict): Maps PMFINE_GROUP variable names (and NO3_c) to their molecular weights.
         attributes (dict): Maps output dataset variables to respective attributes.
+        global_attributes (dict): Maps output dataset global attributes to values.
         kg_air_per_mol (float): Mean molecular weight of dry air in kg/mol.
         air_density (float): Air density at 1 atm and 298K (kg/m3).
         pm_coarse_fraction (float): Fraction of coarse NO3_c included in PM2.5.
@@ -26,7 +27,7 @@ def get_constants() -> None:
     Returns:
         None
     """
-    global arguments, pmfine_mw, attributes, kg_air_per_mol, air_density, pm_coarse_fraction, g_to_kg_dividing_factor, kg_to_ug_multiplying_factor, colon
+    global arguments, pmfine_mw, attributes, global_attributes, kg_air_per_mol, air_density, pm_coarse_fraction, g_to_kg_dividing_factor, kg_to_ug_multiplying_factor, colon
 
     arguments = {
         "--startyear": "Data Start Year",
@@ -50,6 +51,10 @@ def get_constants() -> None:
 
     attributes = {
         "TIME": {"units": "hours since 1970-01-01 00:00:00", "calendar": "standard"}
+    }
+
+    global_attributes = {
+        "title": "output dataset"
     }
 
     kg_air_per_mol = 0.0289647
@@ -105,7 +110,7 @@ def calculate_time_array(wrfDS, emepDS):
 
 def assign_metadata(ds: nc.Dataset) -> None:
     """
-    Assign attributes to output dataset variables.
+    Assign global and variable attributes to output dataset.
     Args:
         ds (netCDF4.Dataset): Output dataset object.
     Returns:
@@ -114,6 +119,9 @@ def assign_metadata(ds: nc.Dataset) -> None:
     for var, attrs in attributes.items():
         for key, val in attrs.items():
             ds[var].__setattr__(key, val)
+
+    for key, val in global_attributes.items():
+        ds.__setattr__(key, val)
 
 def load_3d_wrf_data(ds: nc.Dataset, t: int, common_index: int, varName: str, outArray: np.ndarray) -> None:
     """
