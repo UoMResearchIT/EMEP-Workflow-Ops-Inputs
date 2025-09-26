@@ -51,11 +51,29 @@ def get_constants() -> None:
     }
 
     attributes = {
-        "TIME": {"units": "hours since 1970-01-01 00:00:00", "calendar": "standard"}
+        "TIME": {"units": "hours since 1970-01-01 00:00:00", "calendar": "standard"},
+        "XLAT": {"units": "degrees", "description": "Latitude"},
+        "XLONG": {"units": "degrees", "description": "Longitude"},
+        "O3": {"units": "mol/mol", "description": "Ozone"},
+        "NOX": {"units": "mol/mol", "description": "Nitric Oxide + Nitrogen Dioxide"},
+        "PM25_TOT": {"units": "micrograms per cubic meter", "description": "2.5 micron dry particulate matter"},
+        "Geopotential_Height": {"units": "meters", "description": "Model Height for Mass Grid (from Mean Sea Level)"},
+        "MAXREF": {"units": "dBZ", "description": "Maximum Simulated Radar Reflectivity"},
+        "Precipitable_Water": {"units": "kg/m2", "description": "Precipitable water (Total Column Water Vapour)"},
+        "T": {"units": "Kelvin", "description": "Air Temperature"},
+        "T2": {"units": "Kelvin", "description": "2-meter Air Temperature"},
+        "UVMET10_WDIR": {"units": "m/s", "description": "10m Wind Direction Rotated to Earth Coordinates"},
+        "UVMET_WDIR": {"units": "m/s", "description": "Wind Direction Rotated to Earth Coordinates"},
+        "VMET10": {"units": "m/s", "description": "10m V Component of Wind Rotated to Earth Coordinates"},
+        "VMET": {"units": "m/s", "description": "V Component of Wind Rotated to Earth Coordinates"},
+        "UVMET10_WSPD": {"units": "m/s", "description": "10m Wind Speed Rotated to Earth Coordinates"},
+        "UVMET_WSPD": {"units": "m/s", "description": "Wind Speed Rotated to Earth Coordinates"},
+        "UMET10": {"units": "m/s", "description": "10m U Component of Wind Rotated to Earth Coordinates"},
+        "UMET": {"units": "m/s", "description": "U Component of Wind Rotated to Earth Coordinates"}
     }
 
     global_attributes = {
-        "title": "output dataset"
+        "Title": "Output Dataset"
     }
 
     # Attributes specified below take precedence OVER those specified above (if same name in output ds).
