@@ -258,7 +258,7 @@ def load_4d_emep_data(ds: nc.Dataset, t: int, common_index: int, varName: str, o
     varData = ds[varName][t, :, :, :]
     outArray[common_index, :, :, :] = (to_np(varData)[::-1, :, :]) * multiplying_factor
 
-def load_4d_emep_nox(ds: nc.Dataset, t: int, common_index: int, outArray: np.ndarray) -> None:
+def load_4d_emep_nox(ds: nc.Dataset, t: int, common_index: int, outArray: np.ndarray, multiplying_factor: float = 1) -> None:
     """
     Load and sum NO and NO2 from EMEP data to produce total NOX for a specific time index.
     NOX is calculated as:
@@ -268,12 +268,13 @@ def load_4d_emep_nox(ds: nc.Dataset, t: int, common_index: int, outArray: np.nda
         t (int): Time index.
         common_index (int): Common index for output array.
         outArray (np.ndarray): Output array to store the NOX data.
+        multiplying_factor (float): Multiplying factor for unit conversions.
     Returns:
         None
     """
     no = ds["NO"][t, :, :, :]
     no2 = ds["NO2"][t, :, :, :]
-    outArray[common_index, :, :, :] = ((to_np(no) + to_np(no2))[::-1, :, :]) * ppbv_multiplying_factor
+    outArray[common_index, :, :, :] = ((to_np(no) + to_np(no2))[::-1, :, :]) * multiplying_factor
 
 def load_4d_emep_pm25(ds: nc.Dataset, t: int, common_index: int, outArray: np.ndarray) -> None:
     """
@@ -391,7 +392,7 @@ def data_extract(wrfDir, emepDir, outputDir, wrfFile, emepFile, outFile):
             load_3d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet10_wspd_wdir", uvmet10_wdir_var, 1) # 10m Wind Direction Rotated to Earth Coordinates (in m/s by default)
             
             load_4d_emep_data(emepDS, emep_idx, common_index, "O3", o3_var, ppmv_multiplying_factor)
-            load_4d_emep_nox(emepDS, emep_idx, common_index, nox_var)
+            load_4d_emep_nox(emepDS, emep_idx, common_index, nox_var, ppbv_multiplying_factor)
             load_4d_emep_pm25(emepDS, emep_idx, common_index, pm25_var)
 
 def parse_cli_arguments() -> dict:
