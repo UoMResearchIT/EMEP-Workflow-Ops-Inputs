@@ -24,11 +24,13 @@ def get_constants() -> None:
         pm_coarse_fraction (float): Fraction of coarse NO3_c included in PM2.5.
         g_to_kg_dividing_factor (float): Factor to convert grams to kilograms.
         kg_to_ug_multiplying_factor (float): Factor to convert kilograms to micrograms.
+        ppmv_multiplying_factor (float): Factor to convert mol/mol to ppmv.
+        ppbv_multiplying_factor (float): Factor to convert mol/mol to ppbv.
         colon (str): Safe colon character for filenames (":" or "&#x3a;" on Windows).
     Returns:
         None
     """
-    global arguments, pmfine_mw, attributes, global_attributes, global_attributes_to_read, kg_air_per_mol, air_density, pm_coarse_fraction, g_to_kg_dividing_factor, kg_to_ug_multiplying_factor, colon
+    global arguments, pmfine_mw, attributes, global_attributes, global_attributes_to_read, kg_air_per_mol, air_density, pm_coarse_fraction, g_to_kg_dividing_factor, kg_to_ug_multiplying_factor, ppmv_multiplying_factor, ppbv_multiplying_factor, colon
 
     arguments = {
         "--startyear": "Data Start Year",
@@ -54,9 +56,9 @@ def get_constants() -> None:
         "TIME": {"units": "hours since 1970-01-01 00:00:00", "calendar": "standard"},
         "XLAT": {"units": "degrees", "description": "Latitude"},
         "XLONG": {"units": "degrees", "description": "Longitude"},
-        "O3": {"units": "mol/mol", "description": "Ozone"},
-        "NOX": {"units": "mol/mol", "description": "Nitric Oxide + Nitrogen Dioxide"},
-        "PM25_TOT": {"units": "micrograms per cubic meter", "description": "2.5 micron dry particulate matter"},
+        "O3": {"units": "ppmv", "description": "Ozone"},
+        "NOX": {"units": "ppbv", "description": "Nitric Oxide + Nitrogen Dioxide"},
+        "PM25_TOT": {"units": "micrograms per cubic meter of dry air", "description": "2.5 micron dry particulate matter"},
         "Geopotential_Height": {"units": "meters", "description": "Model Height for Mass Grid (from Mean Sea Level)"},
         "MAXREF": {"units": "dBZ", "description": "Maximum Simulated Radar Reflectivity"},
         "Precipitable_Water": {"units": "kg/m2", "description": "Precipitable water (Total Column Water Vapour)"},
@@ -89,6 +91,8 @@ def get_constants() -> None:
     pm_coarse_fraction = 0.27
     g_to_kg_dividing_factor = 1000.0
     kg_to_ug_multiplying_factor = 1e9
+    ppmv_multiplying_factor = 1e6
+    ppbv_multiplying_factor = 1e9
 
     if os.name == "nt":
         colon = "&#x3a;"
@@ -238,7 +242,7 @@ def load_4d_wrf_data_uv(ds: nc.Dataset, t: int, common_index: int, varName: str,
     varData = getvar(ds, varName, timeidx=t)
     outArray[common_index, :, :, :] = to_np(varData[element_index, :, :, :])
 
-def load_4d_emep_data(ds: nc.Dataset, t: int, common_index: int, varName: str, outArray: np.ndarray) -> None:
+def load_4d_emep_data(ds: nc.Dataset, t: int, common_index: int, varName: str, outArray: np.ndarray, multiplying_factor: float = 1) -> None:
     """
     Load a 4D EMEP variable for a specific time index into an output array.
     Args:
@@ -247,11 +251,12 @@ def load_4d_emep_data(ds: nc.Dataset, t: int, common_index: int, varName: str, o
         common_index (int): Common index for output array.
         varName (str): Name of the variable to extract.
         outArray (np.ndarray): Output array to store the data.
+        multiplying_factor (float): Multiplying factor for unit conversions.
     Returns:
         None
     """
     varData = ds[varName][t, :, :, :]
-    outArray[common_index, :, :, :] = to_np(varData)[::-1, :, :]
+    outArray[common_index, :, :, :] = (to_np(varData)[::-1, :, :]) * multiplying_factor
 
 def load_4d_emep_nox(ds: nc.Dataset, t: int, common_index: int, outArray: np.ndarray) -> None:
     """
@@ -268,7 +273,7 @@ def load_4d_emep_nox(ds: nc.Dataset, t: int, common_index: int, outArray: np.nda
     """
     no = ds["NO"][t, :, :, :]
     no2 = ds["NO2"][t, :, :, :]
-    outArray[common_index, :, :, :] = (to_np(no) + to_np(no2))[::-1, :, :]
+    outArray[common_index, :, :, :] = ((to_np(no) + to_np(no2))[::-1, :, :]) * ppbv_multiplying_factor
 
 def load_4d_emep_pm25(ds: nc.Dataset, t: int, common_index: int, outArray: np.ndarray) -> None:
     """
@@ -385,7 +390,7 @@ def data_extract(wrfDir, emepDir, outputDir, wrfFile, emepFile, outFile):
             load_4d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet_wspd_wdir", uvmet_wdir_var, 1) # Wind Direction Rotated to Earth Coordinates (in m/s by default)
             load_3d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet10_wspd_wdir", uvmet10_wdir_var, 1) # 10m Wind Direction Rotated to Earth Coordinates (in m/s by default)
             
-            load_4d_emep_data(emepDS, emep_idx, common_index, "O3", o3_var)
+            load_4d_emep_data(emepDS, emep_idx, common_index, "O3", o3_var, ppmv_multiplying_factor)
             load_4d_emep_nox(emepDS, emep_idx, common_index, nox_var)
             load_4d_emep_pm25(emepDS, emep_idx, common_index, pm25_var)
 
