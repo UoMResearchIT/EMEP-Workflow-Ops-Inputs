@@ -374,22 +374,22 @@ def data_extract(wrfDir, emepDir, outputDir, wrfFile, emepFile, outFile):
         read_global_attributes(wrfDS, emepDS)
         assign_metadata(out) 
 
-        for wrf_idx, emep_idx, time_val, common_index in zip(wrf_indices, emep_indices, common_times, range(len(common_times))): # The following descriptions are from https://wrf-python.readthedocs.io/en/latest/diagnostics.html
+        for wrf_idx, emep_idx, time_val, common_index in zip(wrf_indices, emep_indices, common_times, range(len(common_times))):
             load_3d_wrf_data(wrfDS, wrf_idx, common_index, "T2", t2_var)
-            load_3d_wrf_data(wrfDS, wrf_idx, common_index, "pw", tcwv_var) # Precipitable Water in kg/m2
-            load_3d_wrf_data(wrfDS, wrf_idx, common_index, "mdbz", maxref_var) # Maximum Simulated Radar Reflectivity in dBZ
+            load_3d_wrf_data(wrfDS, wrf_idx, common_index, "pw", tcwv_var)
+            load_3d_wrf_data(wrfDS, wrf_idx, common_index, "mdbz", maxref_var)
 
-            load_4d_wrf_data(wrfDS, wrf_idx, common_index, "tk", t_var) # Temperature in Kelvin
-            load_4d_wrf_data(wrfDS, wrf_idx, common_index, "height", geopot_var) # Model Height for Mass Grid (from Mean Sea Level) in m by default
+            load_4d_wrf_data(wrfDS, wrf_idx, common_index, "tk", t_var)
+            load_4d_wrf_data(wrfDS, wrf_idx, common_index, "height", geopot_var)
 
-            load_4d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet", umet_var, 0) # U Component of Wind Rotated to Earth Coordinates (in m/s by default)
-            load_3d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet10", umet10_var, 0) # 10m U Component of Wind Rotated to Earth Coordinates (in m/s by default)
-            load_4d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet_wspd_wdir", uvmet_wspd_var, 0) # Wind Speed Rotated to Earth Coordinates (in m/s by default)
-            load_3d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet10_wspd_wdir", uvmet10_wspd_var, 0) # 10m Wind Speed Rotated to Earth Coordinates (in m/s by default)
-            load_4d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet", vmet_var, 1) # V Component of Wind Rotated to Earth Coordinates (in m/s by default)
-            load_3d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet10", vmet10_var, 1) # 10m V Component of Wind Rotated to Earth Coordinates (in m/s by default)
-            load_4d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet_wspd_wdir", uvmet_wdir_var, 1) # Wind Direction Rotated to Earth Coordinates (in m/s by default)
-            load_3d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet10_wspd_wdir", uvmet10_wdir_var, 1) # 10m Wind Direction Rotated to Earth Coordinates (in m/s by default)
+            load_4d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet", umet_var, 0)
+            load_3d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet10", umet10_var, 0)
+            load_4d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet_wspd_wdir", uvmet_wspd_var, 0)
+            load_3d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet10_wspd_wdir", uvmet10_wspd_var, 0)
+            load_4d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet", vmet_var, 1)
+            load_3d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet10", vmet10_var, 1)
+            load_4d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet_wspd_wdir", uvmet_wdir_var, 1)
+            load_3d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet10_wspd_wdir", uvmet10_wdir_var, 1)
             
             load_4d_emep_data(emepDS, emep_idx, common_index, "O3", o3_var, ppmv_multiplying_factor)
             load_4d_emep_nox(emepDS, emep_idx, common_index, nox_var, ppbv_multiplying_factor)
