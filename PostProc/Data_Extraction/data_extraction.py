@@ -53,26 +53,32 @@ def get_constants() -> None:
         "Dust_road_f": 200, "Dust_wb_f": 200, "Dust_sah_f": 200, "NO3_c": 62
     }
 
-    attributes = {
+    fill_values = {
+        "O3": 10, "NOX": 10, "PMFINE_GP": 10, "Geopotential_Height": 10, "MAXREF": 10,
+        "Precipitable_Water": 10, "T": 10, "T2": 10, "UVMET10_WDIR": 10, "UVMET_WDIR": 10,
+        "VMET10": 10, "VMET": 10, "UVMET10_WSPD": 10, "UVMET_WSPD": 10, "UMET10": 10, "UMET": 10
+    }
+
+    attributes = { # _FillValue attribute will not work, has to be fill_value.
         "TIME": {"units": "hours since 1970-01-01 00:00:00", "calendar": "standard"},
         "XLAT": {"units": "degrees", "description": "Latitude"},
         "XLONG": {"units": "degrees", "description": "Longitude"},
-        "O3": {"units": "ppmv", "description": "Ozone"},
-        "NOX": {"units": "ppbv", "description": "Nitric Oxide + Nitrogen Dioxide"},
-        "PM25_TOT": {"units": "micrograms per cubic meter of dry air", "description": "2.5 micron dry particulate matter"},
-        "Geopotential_Height": {"units": "meters", "description": "Model Height for Mass Grid (from Mean Sea Level)"},
-        "MAXREF": {"units": "dBZ", "description": "Maximum Simulated Radar Reflectivity"},
-        "Precipitable_Water": {"units": "kg/m2", "description": "Precipitable water (Total Column Water Vapour)"},
-        "T": {"units": "Kelvin", "description": "Air Temperature"},
-        "T2": {"units": "Kelvin", "description": "2-meter Air Temperature"},
-        "UVMET10_WDIR": {"units": "m/s", "description": "10m Wind Direction Rotated to Earth Coordinates"},
-        "UVMET_WDIR": {"units": "m/s", "description": "Wind Direction Rotated to Earth Coordinates"},
-        "VMET10": {"units": "m/s", "description": "10m V Component of Wind Rotated to Earth Coordinates"},
-        "VMET": {"units": "m/s", "description": "V Component of Wind Rotated to Earth Coordinates"},
-        "UVMET10_WSPD": {"units": "m/s", "description": "10m Wind Speed Rotated to Earth Coordinates"},
-        "UVMET_WSPD": {"units": "m/s", "description": "Wind Speed Rotated to Earth Coordinates"},
-        "UMET10": {"units": "m/s", "description": "10m U Component of Wind Rotated to Earth Coordinates"},
-        "UMET": {"units": "m/s", "description": "U Component of Wind Rotated to Earth Coordinates"}
+        "O3": {"units": "ppmv", "description": "Ozone", "fill_value": fill_values["O3"]},
+        "NOX": {"units": "ppbv", "description": "Nitric Oxide + Nitrogen Dioxide", "fill_value": fill_values["NOX"]},
+        "PM25_TOT": {"units": "micrograms per cubic meter of dry air", "description": "2.5 micron dry particulate matter", "fill_value": fill_values["PMFINE_GP"]},
+        "Geopotential_Height": {"units": "meters", "description": "Model Height for Mass Grid (from Mean Sea Level)", "fill_value": fill_values["Geopotential_Height"]},
+        "MAXREF": {"units": "dBZ", "description": "Maximum Simulated Radar Reflectivity", "fill_value": fill_values["MAXREF"]},
+        "Precipitable_Water": {"units": "kg/m2", "description": "Precipitable water (Total Column Water Vapour)", "fill_value": fill_values["Precipitable_Water"]},
+        "T": {"units": "Kelvin", "description": "Air Temperature", "fill_value": fill_values["T"]},
+        "T2": {"units": "Kelvin", "description": "2-meter Air Temperature", "fill_value": fill_values["T2"]},
+        "UVMET10_WDIR": {"units": "m/s", "description": "10m Wind Direction Rotated to Earth Coordinates", "fill_value": fill_values["UVMET10_WDIR"]},
+        "UVMET_WDIR": {"units": "m/s", "description": "Wind Direction Rotated to Earth Coordinates", "fill_value": fill_values["UVMET_WDIR"]},
+        "VMET10": {"units": "m/s", "description": "10m V Component of Wind Rotated to Earth Coordinates", "fill_value": fill_values["VMET10"]},
+        "VMET": {"units": "m/s", "description": "V Component of Wind Rotated to Earth Coordinates", "fill_value": fill_values["VMET"]},
+        "UVMET10_WSPD": {"units": "m/s", "description": "10m Wind Speed Rotated to Earth Coordinates", "fill_value": fill_values["UVMET10_WSPD"]},
+        "UVMET_WSPD": {"units": "m/s", "description": "Wind Speed Rotated to Earth Coordinates", "fill_value": fill_values["UVMET_WSPD"]},
+        "UMET10": {"units": "m/s", "description": "10m U Component of Wind Rotated to Earth Coordinates", "fill_value": fill_values["UMET10"]},
+        "UMET": {"units": "m/s", "description": "U Component of Wind Rotated to Earth Coordinates", "fill_value": fill_values["UMET"]}
     }
 
     global_attributes = {
@@ -85,12 +91,6 @@ def get_constants() -> None:
     global_attributes_to_read = { # {"attr in input ds": "attr in output ds"}
         "WRF": {"SIMULATION_START_DATE": "wrf_sim_start"},
         "EMEP": {"model": "emep_model"}
-    }
-
-    fill_values = {
-        "O3": 10, "NO": 10, "NO2": 10, "PMFINE_GP": 10, "Geopotential_Height": 10, "MAXREF": 10,
-        "Precipitable_Water": 10, "T": 10, "T2": 10, "UVMET10_WDIR": 10, "UVMET_WDIR": 10,
-        "VMET10": 10, "VMET": 10, "UVMET10_WSPD": 10, "UVMET_WSPD": 10, "UMET10": 10, "UMET": 10
     }
 
     kg_air_per_mol = 0.0289647
@@ -316,11 +316,11 @@ def load_4d_emep_nox(ds: nc.Dataset, t: int, common_index: int, outArray: np.nda
     """
     no = ds["NO"][t, :, :, :]
     arr_no = to_np(no)
-    arr_no = replace_nan_none_with_val(arr_no, fill_values["NO"])
+    arr_no = replace_nan_none_with_val(arr_no, fill_values["NOX"])
 
     no2 = ds["NO2"][t, :, :, :]
     arr_no2 = to_np(no2)
-    arr_no2 = replace_nan_none_with_val(arr_no2, fill_values["NO2"])
+    arr_no2 = replace_nan_none_with_val(arr_no2, fill_values["NOX"])
 
     outArray[common_index, :, :, :] = ((arr_no + arr_no2)[::-1, :, :]) * multiplying_factor
 
