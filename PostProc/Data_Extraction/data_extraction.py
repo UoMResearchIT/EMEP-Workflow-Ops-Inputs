@@ -88,7 +88,7 @@ def get_constants() -> None:
     }
 
     fill_values = {
-        "O3": 10, "NO": 10, "NO2": 10, "PM25_TOT": 10, "Geopotential_Height": 10, "MAXREF": 10,
+        "O3": 10, "NO": 10, "NO2": 10, "PMFINE_GP": 10, "Geopotential_Height": 10, "MAXREF": 10,
         "Precipitable_Water": 10, "T": 10, "T2": 10, "UVMET10_WDIR": 10, "UVMET_WDIR": 10,
         "VMET10": 10, "VMET": 10, "UVMET10_WSPD": 10, "UVMET_WSPD": 10, "UMET10": 10, "UMET": 10
     }
@@ -347,11 +347,14 @@ def load_4d_emep_pm25(ds: nc.Dataset, t: int, common_index: int, outArray: np.nd
 
     for key, val in pmfine_mw.items():
         mw = val / g_to_kg_dividing_factor
+        varData = ds[key][t, :, :, :]
+        arr = to_np(varData)
+        arr = replace_nan_none_with_val(arr, fill_values["PMFINE_GP"])
 
         if key == "NO3_c":
-            pm25 += pm_coarse_fraction * ds[key][t, :, :, :] * (mw / kg_air_per_mol)
+            pm25 += pm_coarse_fraction * arr * (mw / kg_air_per_mol)
         else:
-            pm25 += ds[key][t, :, :, :] * (mw / kg_air_per_mol)
+            pm25 += arr * (mw / kg_air_per_mol)
 
     pm25_ugm3 = convert_pm_mixing_to_ugm3(pm25, air_density)
     outArray[common_index, :, :, :] = to_np(pm25_ugm3)[::-1, :, :]
