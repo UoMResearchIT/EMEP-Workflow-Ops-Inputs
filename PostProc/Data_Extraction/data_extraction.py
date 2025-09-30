@@ -197,6 +197,7 @@ def replace_nan_none_with_val(arr: np.ndarray, val: float = 0) -> np.ndarray:
         np.ndarray: Array with NaN and None replaced.
     """
     arr = np.where(arr == None, val, arr)
+    arr = arr.astype(float)
     arr = np.where(np.isnan(arr), val, arr)
 
     return arr
