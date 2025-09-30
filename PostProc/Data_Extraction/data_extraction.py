@@ -19,6 +19,7 @@ def get_constants() -> None:
         attributes (dict): Maps output dataset variables to respective attributes.
         global_attributes (dict): Maps output dataset global attributes to values.
         global_attributes_to_read (dict): Maps input datasets to the global attributes that are read from them.
+        fill_values (dict): Maps variables/species to fill values in case of nulls/NaNs.
         kg_air_per_mol (float): Mean molecular weight of dry air in kg/mol.
         air_density (float): Air density at 1 atm and 298K (kg/m3).
         pm_coarse_fraction (float): Fraction of coarse NO3_c included in PM2.5.
@@ -30,7 +31,7 @@ def get_constants() -> None:
     Returns:
         None
     """
-    global arguments, pmfine_mw, attributes, global_attributes, global_attributes_to_read, kg_air_per_mol, air_density, pm_coarse_fraction, g_to_kg_dividing_factor, kg_to_ug_multiplying_factor, ppmv_multiplying_factor, ppbv_multiplying_factor, colon
+    global arguments, pmfine_mw, attributes, global_attributes, global_attributes_to_read, fill_values, kg_air_per_mol, air_density, pm_coarse_fraction, g_to_kg_dividing_factor, kg_to_ug_multiplying_factor, ppmv_multiplying_factor, ppbv_multiplying_factor, colon
 
     arguments = {
         "--startyear": "Data Start Year",
@@ -84,6 +85,12 @@ def get_constants() -> None:
     global_attributes_to_read = { # {"attr in input ds": "attr in output ds"}
         "WRF": {"SIMULATION_START_DATE": "wrf_sim_start"},
         "EMEP": {"model": "emep_model"}
+    }
+
+    fill_values = {
+        "O3": 10, "NO": 10, "NO2": 10, "PM25_TOT": 10, "Geopotential_Height": 10, "MAXREF": 10,
+        "Precipitable_Water": 10, "T": 10, "T2": 10, "UVMET10_WDIR": 10, "UVMET_WDIR": 10,
+        "VMET10": 10, "VMET": 10, "UVMET10_WSPD": 10, "UVMET_WSPD": 10, "UMET10": 10, "UMET": 10
     }
 
     kg_air_per_mol = 0.0289647
@@ -180,7 +187,21 @@ def assign_metadata(ds: nc.Dataset) -> None:
     for key, val in global_attributes.items():
         ds.__setattr__(key, val)
 
-def load_3d_wrf_data(ds: nc.Dataset, t: int, common_index: int, varName: str, outArray: np.ndarray) -> None:
+def replace_nan_none_with_val(arr: np.ndarray, val: float = 0) -> np.ndarray:
+    """
+    Replace all NaN and None values in an array (any dimension).
+    Args:
+        arr (np.ndarray): Input array (can be 3D, 4D, 5D, etc.).
+        val (float): Value to replace with.
+    Returns:
+        np.ndarray: Array with NaN and None replaced.
+    """
+    arr = np.where(arr == None, val, arr)
+    arr = np.where(np.isnan(arr), val, arr)
+
+    return arr
+
+def load_3d_wrf_data(ds: nc.Dataset, t: int, common_index: int, varName: str, outArray: np.ndarray, el: str) -> None:
     """
     Load a 3D WRF variable for a specific time index into an output array.
     Args:
@@ -189,13 +210,17 @@ def load_3d_wrf_data(ds: nc.Dataset, t: int, common_index: int, varName: str, ou
         common_index (int): Common index for output array.
         varName (str): Name of the variable to extract.
         outArray (np.ndarray): Output array to store the data.
+        el (str): Output variable name (key for fill_values)
     Returns:
         None
     """
     varData = getvar(ds, varName, timeidx=t)
-    outArray[common_index, :, :] = to_np(varData)
+    arr = to_np(varData)
+    arr = replace_nan_none_with_val(arr, fill_values[el])
 
-def load_3d_wrf_data_uv(ds: nc.Dataset, t: int, common_index: int, varName: str, outArray: np.ndarray, element_index: int) -> None:
+    outArray[common_index, :, :] = arr
+
+def load_3d_wrf_data_uv(ds: nc.Dataset, t: int, common_index: int, varName: str, outArray: np.ndarray, element_index: int, el: str) -> None:
     """
     Load a 3D WRF wind variable for a specific time index into an output array.
     Args:
@@ -205,13 +230,17 @@ def load_3d_wrf_data_uv(ds: nc.Dataset, t: int, common_index: int, varName: str,
         varName (str): Name of the variable to extract.
         outArray (np.ndarray): Output array to store the data.
         element_index (int): Specifies index to choose between u/v or speed/direction.
+        el (str): Output variable name (key for fill_values)
     Returns:
         None
     """
     varData = getvar(ds, varName, timeidx=t)
-    outArray[common_index, :, :] = to_np(varData[element_index, :, :])
+    arr = to_np(varData)
+    arr = replace_nan_none_with_val(arr, fill_values[el])
 
-def load_4d_wrf_data(ds: nc.Dataset, t: int, common_index: int, varName: str, outArray: np.ndarray) -> None:
+    outArray[common_index, :, :] = arr[element_index, :, :]
+
+def load_4d_wrf_data(ds: nc.Dataset, t: int, common_index: int, varName: str, outArray: np.ndarray, el: str) -> None:
     """
     Load a 4D WRF variable for a specific time index into an output array.
     Args:
@@ -220,13 +249,17 @@ def load_4d_wrf_data(ds: nc.Dataset, t: int, common_index: int, varName: str, ou
         common_index (int): Common index for output array.
         varName (str): Name of the variable to extract.
         outArray (np.ndarray): Output array to store the data.
+        el (str): Output variable name (key for fill_values)
     Returns:
         None
     """
     varData = getvar(ds, varName, timeidx=t)
-    outArray[common_index, :, :, :] = to_np(varData)
+    arr = to_np(varData)
+    arr = replace_nan_none_with_val(arr, fill_values[el])
 
-def load_4d_wrf_data_uv(ds: nc.Dataset, t: int, common_index: int, varName: str, outArray: np.ndarray, element_index: int) -> None:
+    outArray[common_index, :, :, :] = arr
+
+def load_4d_wrf_data_uv(ds: nc.Dataset, t: int, common_index: int, varName: str, outArray: np.ndarray, element_index: int, el: str) -> None:
     """
     Load a 4D WRF wind variable for a specific time index into an output array.
     Args:
@@ -236,13 +269,17 @@ def load_4d_wrf_data_uv(ds: nc.Dataset, t: int, common_index: int, varName: str,
         varName (str): Name of the variable to extract.
         outArray (np.ndarray): Output array to store the data.
         element_index (int): Specifies index to choose between u/v or speed/direction.
+        el (str): Output variable name (key for fill_values)
     Returns:
         None
     """
     varData = getvar(ds, varName, timeidx=t)
-    outArray[common_index, :, :, :] = to_np(varData[element_index, :, :, :])
+    arr = to_np(varData)
+    arr = replace_nan_none_with_val(arr, fill_values[el])
 
-def load_4d_emep_data(ds: nc.Dataset, t: int, common_index: int, varName: str, outArray: np.ndarray, multiplying_factor: float = 1) -> None:
+    outArray[common_index, :, :, :] = arr[element_index, :, :, :]
+
+def load_4d_emep_data(ds: nc.Dataset, t: int, common_index: int, varName: str, outArray: np.ndarray, el: str, multiplying_factor: float = 1) -> None:
     """
     Load a 4D EMEP variable for a specific time index into an output array.
     Args:
@@ -251,12 +288,16 @@ def load_4d_emep_data(ds: nc.Dataset, t: int, common_index: int, varName: str, o
         common_index (int): Common index for output array.
         varName (str): Name of the variable to extract.
         outArray (np.ndarray): Output array to store the data.
+        el (str): Output variable name (key for fill_values)
         multiplying_factor (float): Multiplying factor for unit conversions.
     Returns:
         None
     """
     varData = ds[varName][t, :, :, :]
-    outArray[common_index, :, :, :] = (to_np(varData)[::-1, :, :]) * multiplying_factor
+    arr = to_np(varData)
+    arr = replace_nan_none_with_val(arr, fill_values[el])
+
+    outArray[common_index, :, :, :] = (arr[::-1, :, :]) * multiplying_factor
 
 def load_4d_emep_nox(ds: nc.Dataset, t: int, common_index: int, outArray: np.ndarray, multiplying_factor: float = 1) -> None:
     """
@@ -273,8 +314,14 @@ def load_4d_emep_nox(ds: nc.Dataset, t: int, common_index: int, outArray: np.nda
         None
     """
     no = ds["NO"][t, :, :, :]
+    arr_no = to_np(no)
+    arr_no = replace_nan_none_with_val(arr_no, fill_values["NO"])
+
     no2 = ds["NO2"][t, :, :, :]
-    outArray[common_index, :, :, :] = ((to_np(no) + to_np(no2))[::-1, :, :]) * multiplying_factor
+    arr_no2 = to_np(no2)
+    arr_no2 = replace_nan_none_with_val(arr_no2, fill_values["NO2"])
+
+    outArray[common_index, :, :, :] = ((arr_no + arr_no2)[::-1, :, :]) * multiplying_factor
 
 def load_4d_emep_pm25(ds: nc.Dataset, t: int, common_index: int, outArray: np.ndarray) -> None:
     """
@@ -375,23 +422,23 @@ def data_extract(wrfDir, emepDir, outputDir, wrfFile, emepFile, outFile):
         assign_metadata(out) 
 
         for wrf_idx, emep_idx, time_val, common_index in zip(wrf_indices, emep_indices, common_times, range(len(common_times))):
-            load_3d_wrf_data(wrfDS, wrf_idx, common_index, "T2", t2_var)
-            load_3d_wrf_data(wrfDS, wrf_idx, common_index, "pw", tcwv_var)
-            load_3d_wrf_data(wrfDS, wrf_idx, common_index, "mdbz", maxref_var)
+            load_3d_wrf_data(wrfDS, wrf_idx, common_index, "T2", t2_var, "T2")
+            load_3d_wrf_data(wrfDS, wrf_idx, common_index, "pw", tcwv_var, "Precipitable_Water")
+            load_3d_wrf_data(wrfDS, wrf_idx, common_index, "mdbz", maxref_var, "MAXREF")
 
-            load_4d_wrf_data(wrfDS, wrf_idx, common_index, "tk", t_var)
-            load_4d_wrf_data(wrfDS, wrf_idx, common_index, "height", geopot_var)
+            load_4d_wrf_data(wrfDS, wrf_idx, common_index, "tk", t_var, "T")
+            load_4d_wrf_data(wrfDS, wrf_idx, common_index, "height", geopot_var, "Geopotential_Height")
 
-            load_4d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet", umet_var, 0)
-            load_3d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet10", umet10_var, 0)
-            load_4d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet_wspd_wdir", uvmet_wspd_var, 0)
-            load_3d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet10_wspd_wdir", uvmet10_wspd_var, 0)
-            load_4d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet", vmet_var, 1)
-            load_3d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet10", vmet10_var, 1)
-            load_4d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet_wspd_wdir", uvmet_wdir_var, 1)
-            load_3d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet10_wspd_wdir", uvmet10_wdir_var, 1)
+            load_4d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet", umet_var, 0, "UMET")
+            load_3d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet10", umet10_var, 0, "UMET10")
+            load_4d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet_wspd_wdir", uvmet_wspd_var, 0, "UVMET_WSPD")
+            load_3d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet10_wspd_wdir", uvmet10_wspd_var, 0, "UVMET10_WSPD")
+            load_4d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet", vmet_var, 1, "VMET")
+            load_3d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet10", vmet10_var, 1, "VMET10")
+            load_4d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet_wspd_wdir", uvmet_wdir_var, 1, "UVMET_WDIR")
+            load_3d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet10_wspd_wdir", uvmet10_wdir_var, 1, "UVMET10_WDIR")
             
-            load_4d_emep_data(emepDS, emep_idx, common_index, "O3", o3_var, ppmv_multiplying_factor)
+            load_4d_emep_data(emepDS, emep_idx, common_index, "O3", o3_var, "O3", ppmv_multiplying_factor)
             load_4d_emep_nox(emepDS, emep_idx, common_index, nox_var, ppbv_multiplying_factor)
             load_4d_emep_pm25(emepDS, emep_idx, common_index, pm25_var)
 
