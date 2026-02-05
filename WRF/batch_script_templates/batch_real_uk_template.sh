@@ -4,7 +4,7 @@
 #
 # SPDX-License-Identifier: apache-2.0
 
-#SBATCH -t 0-2
+#SBATCH -t 0-12
 #SBATCH -p multicore_small
 #SBATCH -n 6
 #SBATCH -J REAL-UK-%%JOBID%%
