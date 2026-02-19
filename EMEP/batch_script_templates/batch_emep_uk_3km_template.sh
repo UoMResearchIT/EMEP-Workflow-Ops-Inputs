@@ -4,11 +4,11 @@
 #
 # SPDX-License-Identifier: apache-2.0
 
-#SBATCH -t 1-0
+#SBATCH -t 2-12
 #SBATCH -p hpcpool
 #SBATCH -A hpc-dt-targ
-#SBATCH -N 4
-#SBATCH -n 128
+#SBATCH -N 5
+#SBATCH -n 160
 #SBATCH -J EMEP-UK3-%%JOBID%%
 
 module load compilers/gcc/8.2.0
@@ -55,5 +55,5 @@ link_met_data ${WRF_3KM_PATH}
 
 # run EMEP for 3km UK grid
 cd ${WORK_PATH_3KM}
-mpiexec --mca -np 128 ${EMEP_EXEC}
+mpiexec --mca -np 160 ${EMEP_EXEC}
 

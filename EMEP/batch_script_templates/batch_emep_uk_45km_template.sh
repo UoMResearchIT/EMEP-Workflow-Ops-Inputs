@@ -4,9 +4,9 @@
 #
 # SPDX-License-Identifier: apache-2.0
 
-#SBATCH -t 1-0
-#SBATCH -p multicore
-#SBATCH -n 36
+#SBATCH -t 0-12
+#SBATCH -p multicore_small
+#SBATCH -n 32
 #SBATCH -J EMEP-UK45-%%JOBID%%
 
 module load compilers/gcc/8.2.0
@@ -53,6 +53,6 @@ link_met_data ${WRF_45KM_PATH}
 
 # run EMEP for 45km UK grid
 cd ${WORK_PATH_45KM}
-mpiexec --mca -np 36 ${EMEP_EXEC}
+mpiexec --mca -np 32 ${EMEP_EXEC}
 
 

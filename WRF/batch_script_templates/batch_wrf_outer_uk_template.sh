@@ -4,9 +4,9 @@
 #
 # SPDX-License-Identifier: apache-2.0
 
-#SBATCH -t 1-6
-#SBATCH -p multicore
-#SBATCH -n 36
+#SBATCH -t 0-12
+#SBATCH -p multicore_small
+#SBATCH -n 25
 #SBATCH -J WRF-OUTERUK-%%JOBID%%
 
 module load apps/gcc/wrf/4.5
@@ -33,4 +33,4 @@ ln -s ${CWD}/${REAL_NAME}/wrflowinp_d02 .
 
 # run the domains with different numbers of processes (due to differing domain sizes)
 rm rsl.error.* rsl.out.*
-time mpirun -np 36 wrf.exe
+time mpirun -np 25 wrf.exe

@@ -13,6 +13,10 @@ conda activate wrf-python
 
 CWD=%%POSTPROCDIR%%
 
+WRFDIR=%%WRFDIR%%
+EMEPDIR=%%EMEPDIR%%
+OUTPUTDIR=%%OUTDIR%%
+
 STARTYEAR=%%YRST%%
 STARTMONTH=%%MONST%%
 STARTDAY=%%DAYST%%
@@ -21,11 +25,17 @@ ENDYEAR=%%YREND%%
 ENDMONTH=%%MONEND%%
 ENDDAY=%%DAYEND%%
 
-WRFDIR=%%WRFDIR%%
-EMEPDIR=%%EMEPDIR%%
-OUTPUTDIR=%%OUTDIR%%
+start_sec=$(date -d "${STARTYEAR}-${STARTMONTH}-${STARTDAY}" +%s)
+end_sec=$(date -d "${ENDYEAR}-${ENDMONTH}-${ENDDAY}" +%s)
 
+current_sec=$start_sec
 
-python data_extraction.py --startyear $STARTYEAR --startmonth $STARTMONTH --startday $STARTDAY \
-						--endyear $ENDYEAR --endmonth $ENDMONTH --endday $ENDDAY \
-						--wrfdir $WRFDIR --emepdir $EMEPDIR --outdir $OUTPUTDIR
+while (( current_sec <= end_sec )); do
+	YEAR=$(date -d "@$current_sec" +%Y)
+	MONTH=$(date -d "@$current_sec" +%m)
+	DAY=$(date -d "@$current_sec" +%d)
+	python data_extraction.py --startyear $YEAR --startmonth $MONTH --startday $DAY \
+                                  --endyear $YEAR --endmonth $MONTH --endday $DAY \
+                                  --wrfdir $WRFDIR --emepdir $EMEPDIR --outdir $OUTPUTDIR
+	current_sec=$(( current_sec + 86400 ))
+done
