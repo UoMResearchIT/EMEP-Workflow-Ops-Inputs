@@ -1,6 +1,6 @@
 #!/bin/bash --login
 
-# SPDX-FileCopyrightText: 2025 University of Manchester
+# SPDX-FileCopyrightText: 2025 - 2026 University of Manchester
 #
 # SPDX-License-Identifier: apache-2.0
 
