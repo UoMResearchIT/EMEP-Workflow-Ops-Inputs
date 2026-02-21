@@ -19,6 +19,7 @@ def get_constants() -> None:
         attributes (dict): Maps output dataset variables to respective attributes.
         global_attributes (dict): Maps output dataset global attributes to values.
         global_attributes_to_read (dict): Maps input datasets to the global attributes that are read from them.
+        fill_values (dict): Maps variables/species to fill values in case of nulls/NaNs.
         kg_air_per_mol (float): Mean molecular weight of dry air in kg/mol.
         air_density (float): Air density at 1 atm and 298K (kg/m3).
         pm_coarse_fraction (float): Fraction of coarse NO3_c included in PM2.5.
@@ -30,7 +31,7 @@ def get_constants() -> None:
     Returns:
         None
     """
-    global arguments, pmfine_mw, attributes, global_attributes, global_attributes_to_read, kg_air_per_mol, air_density, pm_coarse_fraction, g_to_kg_dividing_factor, kg_to_ug_multiplying_factor, ppmv_multiplying_factor, ppbv_multiplying_factor, colon
+    global arguments, pmfine_mw, attributes, global_attributes, global_attributes_to_read, fill_values, kg_air_per_mol, air_density, pm_coarse_fraction, g_to_kg_dividing_factor, kg_to_ug_multiplying_factor, ppmv_multiplying_factor, ppbv_multiplying_factor, colon
 
     arguments = {
         "--startyear": "Data Start Year",
@@ -52,26 +53,32 @@ def get_constants() -> None:
         "Dust_road_f": 200, "Dust_wb_f": 200, "Dust_sah_f": 200, "NO3_c": 62
     }
 
-    attributes = {
+    fill_values = {
+        "O3": 10, "NOX": 10, "PMFINE_GP": 10, "Geopotential_Height": 10, "MAXREF": 10,
+        "Precipitable_Water": 10, "T": 10, "T2": 10, "UVMET10_WDIR": 10, "UVMET_WDIR": 10,
+        "VMET10": 10, "VMET": 10, "UVMET10_WSPD": 10, "UVMET_WSPD": 10, "UMET10": 10, "UMET": 10
+    }
+
+    attributes = { # _FillValue attribute will not work, has to be fill_value.
         "TIME": {"units": "hours since 1970-01-01 00:00:00", "calendar": "standard"},
         "XLAT": {"units": "degrees", "description": "Latitude"},
         "XLONG": {"units": "degrees", "description": "Longitude"},
-        "O3": {"units": "ppmv", "description": "Ozone"},
-        "NOX": {"units": "ppbv", "description": "Nitric Oxide + Nitrogen Dioxide"},
-        "PM25_TOT": {"units": "micrograms per cubic meter of dry air", "description": "2.5 micron dry particulate matter"},
-        "Geopotential_Height": {"units": "meters", "description": "Model Height for Mass Grid (from Mean Sea Level)"},
-        "MAXREF": {"units": "dBZ", "description": "Maximum Simulated Radar Reflectivity"},
-        "Precipitable_Water": {"units": "kg/m2", "description": "Precipitable water (Total Column Water Vapour)"},
-        "T": {"units": "Kelvin", "description": "Air Temperature"},
-        "T2": {"units": "Kelvin", "description": "2-meter Air Temperature"},
-        "UVMET10_WDIR": {"units": "m/s", "description": "10m Wind Direction Rotated to Earth Coordinates"},
-        "UVMET_WDIR": {"units": "m/s", "description": "Wind Direction Rotated to Earth Coordinates"},
-        "VMET10": {"units": "m/s", "description": "10m V Component of Wind Rotated to Earth Coordinates"},
-        "VMET": {"units": "m/s", "description": "V Component of Wind Rotated to Earth Coordinates"},
-        "UVMET10_WSPD": {"units": "m/s", "description": "10m Wind Speed Rotated to Earth Coordinates"},
-        "UVMET_WSPD": {"units": "m/s", "description": "Wind Speed Rotated to Earth Coordinates"},
-        "UMET10": {"units": "m/s", "description": "10m U Component of Wind Rotated to Earth Coordinates"},
-        "UMET": {"units": "m/s", "description": "U Component of Wind Rotated to Earth Coordinates"}
+        "O3": {"units": "ppmv", "description": "Ozone", "fill_value": fill_values["O3"]},
+        "NOX": {"units": "ppbv", "description": "Nitric Oxide + Nitrogen Dioxide", "fill_value": fill_values["NOX"]},
+        "PM25_TOT": {"units": "micrograms per cubic meter of dry air", "description": "2.5 micron dry particulate matter", "fill_value": fill_values["PMFINE_GP"]},
+        "Geopotential_Height": {"units": "meters", "description": "Model Height for Mass Grid (from Mean Sea Level)", "fill_value": fill_values["Geopotential_Height"]},
+        "MAXREF": {"units": "dBZ", "description": "Maximum Simulated Radar Reflectivity", "fill_value": fill_values["MAXREF"]},
+        "Precipitable_Water": {"units": "kg/m2", "description": "Precipitable water (Total Column Water Vapour)", "fill_value": fill_values["Precipitable_Water"]},
+        "T": {"units": "Kelvin", "description": "Air Temperature", "fill_value": fill_values["T"]},
+        "T2": {"units": "Kelvin", "description": "2-meter Air Temperature", "fill_value": fill_values["T2"]},
+        "UVMET10_WDIR": {"units": "m/s", "description": "10m Wind Direction Rotated to Earth Coordinates", "fill_value": fill_values["UVMET10_WDIR"]},
+        "UVMET_WDIR": {"units": "m/s", "description": "Wind Direction Rotated to Earth Coordinates", "fill_value": fill_values["UVMET_WDIR"]},
+        "VMET10": {"units": "m/s", "description": "10m V Component of Wind Rotated to Earth Coordinates", "fill_value": fill_values["VMET10"]},
+        "VMET": {"units": "m/s", "description": "V Component of Wind Rotated to Earth Coordinates", "fill_value": fill_values["VMET"]},
+        "UVMET10_WSPD": {"units": "m/s", "description": "10m Wind Speed Rotated to Earth Coordinates", "fill_value": fill_values["UVMET10_WSPD"]},
+        "UVMET_WSPD": {"units": "m/s", "description": "Wind Speed Rotated to Earth Coordinates", "fill_value": fill_values["UVMET_WSPD"]},
+        "UMET10": {"units": "m/s", "description": "10m U Component of Wind Rotated to Earth Coordinates", "fill_value": fill_values["UMET10"]},
+        "UMET": {"units": "m/s", "description": "U Component of Wind Rotated to Earth Coordinates", "fill_value": fill_values["UMET"]}
     }
 
     global_attributes = {
@@ -180,7 +187,22 @@ def assign_metadata(ds: nc.Dataset) -> None:
     for key, val in global_attributes.items():
         ds.__setattr__(key, val)
 
-def load_3d_wrf_data(ds: nc.Dataset, t: int, common_index: int, varName: str, outArray: np.ndarray) -> None:
+def replace_nan_none_with_val(arr: np.ndarray, val: float = 0) -> np.ndarray:
+    """
+    Replace all NaN and None values in an array (any dimension).
+    Args:
+        arr (np.ndarray): Input array (can be 3D, 4D, 5D, etc.).
+        val (float): Value to replace with.
+    Returns:
+        np.ndarray: Array with NaN and None replaced.
+    """
+    arr = np.where(arr == None, val, arr)
+    arr = arr.astype(float)
+    arr = np.where(np.isnan(arr), val, arr)
+
+    return arr
+
+def load_3d_wrf_data(ds: nc.Dataset, t: int, common_index: int, varName: str, outArray: np.ndarray, el: str) -> None:
     """
     Load a 3D WRF variable for a specific time index into an output array.
     Args:
@@ -189,13 +211,17 @@ def load_3d_wrf_data(ds: nc.Dataset, t: int, common_index: int, varName: str, ou
         common_index (int): Common index for output array.
         varName (str): Name of the variable to extract.
         outArray (np.ndarray): Output array to store the data.
+        el (str): Output variable name (key for fill_values)
     Returns:
         None
     """
     varData = getvar(ds, varName, timeidx=t)
-    outArray[common_index, :, :] = to_np(varData)
+    arr = to_np(varData)
+    arr = replace_nan_none_with_val(arr, fill_values[el])
 
-def load_3d_wrf_data_uv(ds: nc.Dataset, t: int, common_index: int, varName: str, outArray: np.ndarray, element_index: int) -> None:
+    outArray[common_index, :, :] = arr
+
+def load_3d_wrf_data_uv(ds: nc.Dataset, t: int, common_index: int, varName: str, outArray: np.ndarray, element_index: int, el: str) -> None:
     """
     Load a 3D WRF wind variable for a specific time index into an output array.
     Args:
@@ -205,13 +231,17 @@ def load_3d_wrf_data_uv(ds: nc.Dataset, t: int, common_index: int, varName: str,
         varName (str): Name of the variable to extract.
         outArray (np.ndarray): Output array to store the data.
         element_index (int): Specifies index to choose between u/v or speed/direction.
+        el (str): Output variable name (key for fill_values)
     Returns:
         None
     """
     varData = getvar(ds, varName, timeidx=t)
-    outArray[common_index, :, :] = to_np(varData[element_index, :, :])
+    arr = to_np(varData)
+    arr = replace_nan_none_with_val(arr, fill_values[el])
 
-def load_4d_wrf_data(ds: nc.Dataset, t: int, common_index: int, varName: str, outArray: np.ndarray) -> None:
+    outArray[common_index, :, :] = arr[element_index, :, :]
+
+def load_4d_wrf_data(ds: nc.Dataset, t: int, common_index: int, varName: str, outArray: np.ndarray, el: str) -> None:
     """
     Load a 4D WRF variable for a specific time index into an output array.
     Args:
@@ -220,13 +250,17 @@ def load_4d_wrf_data(ds: nc.Dataset, t: int, common_index: int, varName: str, ou
         common_index (int): Common index for output array.
         varName (str): Name of the variable to extract.
         outArray (np.ndarray): Output array to store the data.
+        el (str): Output variable name (key for fill_values)
     Returns:
         None
     """
     varData = getvar(ds, varName, timeidx=t)
-    outArray[common_index, :, :, :] = to_np(varData)
+    arr = to_np(varData)
+    arr = replace_nan_none_with_val(arr, fill_values[el])
 
-def load_4d_wrf_data_uv(ds: nc.Dataset, t: int, common_index: int, varName: str, outArray: np.ndarray, element_index: int) -> None:
+    outArray[common_index, :, :, :] = arr
+
+def load_4d_wrf_data_uv(ds: nc.Dataset, t: int, common_index: int, varName: str, outArray: np.ndarray, element_index: int, el: str) -> None:
     """
     Load a 4D WRF wind variable for a specific time index into an output array.
     Args:
@@ -236,13 +270,17 @@ def load_4d_wrf_data_uv(ds: nc.Dataset, t: int, common_index: int, varName: str,
         varName (str): Name of the variable to extract.
         outArray (np.ndarray): Output array to store the data.
         element_index (int): Specifies index to choose between u/v or speed/direction.
+        el (str): Output variable name (key for fill_values)
     Returns:
         None
     """
     varData = getvar(ds, varName, timeidx=t)
-    outArray[common_index, :, :, :] = to_np(varData[element_index, :, :, :])
+    arr = to_np(varData)
+    arr = replace_nan_none_with_val(arr, fill_values[el])
 
-def load_4d_emep_data(ds: nc.Dataset, t: int, common_index: int, varName: str, outArray: np.ndarray, multiplying_factor: float = 1) -> None:
+    outArray[common_index, :, :, :] = arr[element_index, :, :, :]
+
+def load_4d_emep_data(ds: nc.Dataset, t: int, common_index: int, varName: str, outArray: np.ndarray, el: str, multiplying_factor: float = 1) -> None:
     """
     Load a 4D EMEP variable for a specific time index into an output array.
     Args:
@@ -251,12 +289,16 @@ def load_4d_emep_data(ds: nc.Dataset, t: int, common_index: int, varName: str, o
         common_index (int): Common index for output array.
         varName (str): Name of the variable to extract.
         outArray (np.ndarray): Output array to store the data.
+        el (str): Output variable name (key for fill_values)
         multiplying_factor (float): Multiplying factor for unit conversions.
     Returns:
         None
     """
     varData = ds[varName][t, :, :, :]
-    outArray[common_index, :, :, :] = (to_np(varData)[::-1, :, :]) * multiplying_factor
+    arr = to_np(varData)
+    arr = replace_nan_none_with_val(arr, fill_values[el])
+
+    outArray[common_index, :, :, :] = (arr[::-1, :, :]) * multiplying_factor
 
 def load_4d_emep_nox(ds: nc.Dataset, t: int, common_index: int, outArray: np.ndarray, multiplying_factor: float = 1) -> None:
     """
@@ -273,8 +315,14 @@ def load_4d_emep_nox(ds: nc.Dataset, t: int, common_index: int, outArray: np.nda
         None
     """
     no = ds["NO"][t, :, :, :]
+    arr_no = to_np(no)
+    arr_no = replace_nan_none_with_val(arr_no, fill_values["NOX"])
+
     no2 = ds["NO2"][t, :, :, :]
-    outArray[common_index, :, :, :] = ((to_np(no) + to_np(no2))[::-1, :, :]) * multiplying_factor
+    arr_no2 = to_np(no2)
+    arr_no2 = replace_nan_none_with_val(arr_no2, fill_values["NOX"])
+
+    outArray[common_index, :, :, :] = ((arr_no + arr_no2)[::-1, :, :]) * multiplying_factor
 
 def load_4d_emep_pm25(ds: nc.Dataset, t: int, common_index: int, outArray: np.ndarray) -> None:
     """
@@ -299,11 +347,14 @@ def load_4d_emep_pm25(ds: nc.Dataset, t: int, common_index: int, outArray: np.nd
 
     for key, val in pmfine_mw.items():
         mw = val / g_to_kg_dividing_factor
+        varData = ds[key][t, :, :, :]
+        arr = to_np(varData)
+        arr = replace_nan_none_with_val(arr, fill_values["PMFINE_GP"])
 
         if key == "NO3_c":
-            pm25 += pm_coarse_fraction * ds[key][t, :, :, :] * (mw / kg_air_per_mol)
+            pm25 += pm_coarse_fraction * arr * (mw / kg_air_per_mol)
         else:
-            pm25 += ds[key][t, :, :, :] * (mw / kg_air_per_mol)
+            pm25 += arr * (mw / kg_air_per_mol)
 
     pm25_ugm3 = convert_pm_mixing_to_ugm3(pm25, air_density)
     outArray[common_index, :, :, :] = to_np(pm25_ugm3)[::-1, :, :]
@@ -374,24 +425,24 @@ def data_extract(wrfDir, emepDir, outputDir, wrfFile, emepFile, outFile):
         read_global_attributes(wrfDS, emepDS)
         assign_metadata(out) 
 
-        for wrf_idx, emep_idx, time_val, common_index in zip(wrf_indices, emep_indices, common_times, range(len(common_times))): # The following descriptions are from https://wrf-python.readthedocs.io/en/latest/diagnostics.html
-            load_3d_wrf_data(wrfDS, wrf_idx, common_index, "T2", t2_var)
-            load_3d_wrf_data(wrfDS, wrf_idx, common_index, "pw", tcwv_var) # Precipitable Water in kg/m2
-            load_3d_wrf_data(wrfDS, wrf_idx, common_index, "mdbz", maxref_var) # Maximum Simulated Radar Reflectivity in dBZ
+        for wrf_idx, emep_idx, time_val, common_index in zip(wrf_indices, emep_indices, common_times, range(len(common_times))):
+            load_3d_wrf_data(wrfDS, wrf_idx, common_index, "T2", t2_var, "T2")
+            load_3d_wrf_data(wrfDS, wrf_idx, common_index, "pw", tcwv_var, "Precipitable_Water")
+            load_3d_wrf_data(wrfDS, wrf_idx, common_index, "mdbz", maxref_var, "MAXREF")
 
-            load_4d_wrf_data(wrfDS, wrf_idx, common_index, "tk", t_var) # Temperature in Kelvin
-            load_4d_wrf_data(wrfDS, wrf_idx, common_index, "height", geopot_var) # Model Height for Mass Grid (from Mean Sea Level) in m by default
+            load_4d_wrf_data(wrfDS, wrf_idx, common_index, "tk", t_var, "T")
+            load_4d_wrf_data(wrfDS, wrf_idx, common_index, "height", geopot_var, "Geopotential_Height")
 
-            load_4d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet", umet_var, 0) # U Component of Wind Rotated to Earth Coordinates (in m/s by default)
-            load_3d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet10", umet10_var, 0) # 10m U Component of Wind Rotated to Earth Coordinates (in m/s by default)
-            load_4d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet_wspd_wdir", uvmet_wspd_var, 0) # Wind Speed Rotated to Earth Coordinates (in m/s by default)
-            load_3d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet10_wspd_wdir", uvmet10_wspd_var, 0) # 10m Wind Speed Rotated to Earth Coordinates (in m/s by default)
-            load_4d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet", vmet_var, 1) # V Component of Wind Rotated to Earth Coordinates (in m/s by default)
-            load_3d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet10", vmet10_var, 1) # 10m V Component of Wind Rotated to Earth Coordinates (in m/s by default)
-            load_4d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet_wspd_wdir", uvmet_wdir_var, 1) # Wind Direction Rotated to Earth Coordinates (in m/s by default)
-            load_3d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet10_wspd_wdir", uvmet10_wdir_var, 1) # 10m Wind Direction Rotated to Earth Coordinates (in m/s by default)
+            load_4d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet", umet_var, 0, "UMET")
+            load_3d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet10", umet10_var, 0, "UMET10")
+            load_4d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet_wspd_wdir", uvmet_wspd_var, 0, "UVMET_WSPD")
+            load_3d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet10_wspd_wdir", uvmet10_wspd_var, 0, "UVMET10_WSPD")
+            load_4d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet", vmet_var, 1, "VMET")
+            load_3d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet10", vmet10_var, 1, "VMET10")
+            load_4d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet_wspd_wdir", uvmet_wdir_var, 1, "UVMET_WDIR")
+            load_3d_wrf_data_uv(wrfDS, wrf_idx, common_index, "uvmet10_wspd_wdir", uvmet10_wdir_var, 1, "UVMET10_WDIR")
             
-            load_4d_emep_data(emepDS, emep_idx, common_index, "O3", o3_var, ppmv_multiplying_factor)
+            load_4d_emep_data(emepDS, emep_idx, common_index, "O3", o3_var, "O3", ppmv_multiplying_factor)
             load_4d_emep_nox(emepDS, emep_idx, common_index, nox_var, ppbv_multiplying_factor)
             load_4d_emep_pm25(emepDS, emep_idx, common_index, pm25_var)
 
